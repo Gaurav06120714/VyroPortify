@@ -23,8 +23,15 @@ from sqlalchemy.ext.asyncio import (
 from app.core.config import settings
 
 # ── Engine ─────────────────────────────────────────────────────────────────────
+# Railway gives "postgresql://" — rewrite to asyncpg driver for SQLAlchemy async.
+_db_url = settings.DATABASE_URL
+if _db_url.startswith("postgres://"):
+    _db_url = _db_url.replace("postgres://", "postgresql+asyncpg://", 1)
+elif _db_url.startswith("postgresql://") and "+asyncpg" not in _db_url:
+    _db_url = _db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+
 engine = create_async_engine(
-    settings.DATABASE_URL,
+    _db_url,
     echo=settings.DB_ECHO_SQL,
     pool_size=settings.DB_POOL_SIZE,       # base persistent connections (default: 5)
     max_overflow=settings.DB_MAX_OVERFLOW, # burst connections above pool_size (default: 10)
