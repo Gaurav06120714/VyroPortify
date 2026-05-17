@@ -9,11 +9,10 @@ import json
 import logging
 from pathlib import Path
 
-import anthropic
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from app.core.config import settings
 from app.core.security_config import security_settings
+from app.services.ai_client import call_ai
 
 logger = logging.getLogger(__name__)
 
@@ -41,9 +40,6 @@ Rules:
 class ContentEnhancer:
     """Calls Claude to generate enhanced portfolio copy from parsed resume data."""
 
-    def __init__(self) -> None:
-        self._client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
-
     def enhance(self, parsed_data: dict) -> dict:
         """Generate enhanced content fields for a portfolio.
 
@@ -68,24 +64,11 @@ class ContentEnhancer:
             raw_json = raw_json[:max_len]
 
         try:
-            response = self._client.messages.create(
-                model="claude-3-5-haiku-latest",
+            text = call_ai(
+                prompt=f"Enhance this resume data:\n\n{raw_json}",
+                system=_ENHANCE_SYSTEM,
                 max_tokens=1024,
-                system=[
-                    {
-                        "type": "text",
-                        "text": _ENHANCE_SYSTEM,
-                        "cache_control": {"type": "ephemeral"},
-                    }
-                ],
-                messages=[
-                    {
-                        "role": "user",
-                        "content": f"Enhance this resume data:\n\n{raw_json}",
-                    }
-                ],
             )
-            text = response.content[0].text.strip()
             if text.startswith("```"):
                 lines = text.split("\n")
                 text = "\n".join(lines[1:-1] if lines[-1] == "```" else lines[1:])

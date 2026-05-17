@@ -8,9 +8,7 @@ any gaps and make the content richer.
 import json
 import logging
 
-import anthropic
-
-from app.core.config import settings
+from app.services.ai_client import call_ai
 from app.services.resume_parser import (
     Education,
     Project,
@@ -87,8 +85,6 @@ def build_resume_with_claude(form_data: dict) -> ResumeData:
       social_links        {github, linkedin, website}
       career_goal         str
     """
-    client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
-
     personal = form_data.get("personal", {})
     exp_summary = form_data.get("experience_summary", {})
     work_exps = form_data.get("work_experiences", [])
@@ -158,20 +154,7 @@ Output schema to match:
 Produce the polished resume JSON now."""
 
     try:
-        response = client.messages.create(
-            model="claude-3-5-haiku-latest",
-            max_tokens=4096,
-            system=[
-                {
-                    "type": "text",
-                    "text": _SYSTEM,
-                    "cache_control": {"type": "ephemeral"},
-                }
-            ],
-            messages=[{"role": "user", "content": user_prompt}],
-        )
-
-        raw = response.content[0].text.strip()
+        raw = call_ai(prompt=user_prompt, system=_SYSTEM, max_tokens=4096)
         # Strip accidental markdown fences
         if raw.startswith("```"):
             raw = raw.split("```")[1]

@@ -10,7 +10,7 @@ import time
 from io import BytesIO
 from pathlib import Path
 
-import anthropic
+from app.services.ai_client import call_ai
 import pdfplumber
 from pydantic import BaseModel, ValidationError
 
@@ -266,34 +266,18 @@ def parse_resume_with_claude(raw_text: str) -> ResumeData:
     Retries up to 3 times with exponential backoff (2s, 4s, 8s).
     Raises ResumeParseError on failure after all retries.
     """
-    client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
-
     last_exc: Exception | None = None
 
-    # Sanitize before sending to Claude — prevents prompt injection via resume content
+    # Sanitize before sending to AI — prevents prompt injection via resume content
     safe_text = sanitize_for_ai(raw_text, source="resume_text")
 
     for attempt in range(3):
         try:
-            response = client.messages.create(
-                model="claude-3-5-haiku-latest",
+            response_text = call_ai(
+                prompt=f"Parse this resume and return JSON:\n\n{safe_text}",
+                system=_SYSTEM_PROMPT,
                 max_tokens=4096,
-                system=[
-                    {
-                        "type": "text",
-                        "text": _SYSTEM_PROMPT,
-                        "cache_control": {"type": "ephemeral"},
-                    }
-                ],
-                messages=[
-                    {
-                        "role": "user",
-                        "content": f"Parse this resume and return JSON:\n\n{safe_text}",
-                    }
-                ],
             )
-
-            response_text = response.content[0].text.strip()
 
             # Strip markdown code fences if model wraps output anyway
             if response_text.startswith("```"):
@@ -306,9 +290,6 @@ def parse_resume_with_claude(raw_text: str) -> ResumeData:
         except (json.JSONDecodeError, ValidationError) as exc:
             last_exc = exc
             logger.warning("Resume parse attempt %d — invalid response: %s", attempt + 1, exc)
-        except anthropic.APIError as exc:
-            last_exc = exc
-            logger.warning("Resume parse attempt %d — API error: %s", attempt + 1, exc)
         except Exception as exc:
             last_exc = exc
             logger.warning("Resume parse attempt %d — unexpected error: %s", attempt + 1, exc)

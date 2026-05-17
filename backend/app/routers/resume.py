@@ -17,7 +17,6 @@ All endpoints require:
 import logging
 import uuid
 
-import anthropic
 from fastapi import APIRouter, HTTPException, Query, Request, UploadFile, status
 from pydantic import BaseModel
 from sqlalchemy import func, select
@@ -172,12 +171,10 @@ async def suggest_skills(
     try:
         from app.services.resume_parser import sanitize_for_ai
 
-        client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+        from app.services.ai_client import call_ai
 
         # Sanitize all user-supplied strings before embedding in the prompt.
-        # career_goal is free text — prime injection surface.
         safe_career_goal = sanitize_for_ai(payload.career_goal, source="career_goal")
-        # Truncate individual list items to 100 chars to prevent list-smuggling attacks
         safe_roles = [r[:100] for r in payload.role_titles[:20]]
         safe_stack = [t[:100] for t in payload.tech_stack[:50]]
         safe_skills = [s[:100] for s in payload.current_skills[:100]]
@@ -190,13 +187,8 @@ async def suggest_skills(
             f"suggest 8–12 additional relevant skills they should add to their resume. "
             f"Return ONLY a JSON array of strings, no explanation. Example: [\"Docker\", \"CI/CD\"]"
         )
-        response = client.messages.create(
-            model="claude-3-5-haiku-latest",
-            max_tokens=256,
-            messages=[{"role": "user", "content": prompt}],
-        )
         import json
-        raw = response.content[0].text.strip().strip("`")
+        raw = call_ai(prompt=prompt, max_tokens=256).strip().strip("`")
         if raw.startswith("json"):
             raw = raw[4:]
         suggestions = json.loads(raw)
@@ -247,13 +239,8 @@ async def generate_cover_letter(
     )
 
     try:
-        client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
-        response = client.messages.create(
-            model="claude-3-5-haiku-latest",
-            max_tokens=1024,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        letter = response.content[0].text.strip()
+        from app.services.ai_client import call_ai
+        letter = call_ai(prompt=prompt, max_tokens=1024)
         return CoverLetterResponse(cover_letter=letter)
     except Exception as exc:
         logger.warning("Cover letter generation failed: %s", exc)

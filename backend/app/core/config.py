@@ -48,6 +48,7 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = "http://localhost:3000"
     OPENAI_API_KEY: str = ""
     ANTHROPIC_API_KEY: str = ""
+    OPENROUTER_API_KEY: str = ""
 
     # ── Clerk (authentication) ────────────────────────────────────────────
     CLERK_JWKS_URL: str = "https://thorough-terrier-90.clerk.accounts.dev/.well-known/jwks.json"
