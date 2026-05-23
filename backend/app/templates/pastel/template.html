@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ name }} — Portfolio</title>
+  <meta name="description" content="{{ hero_description or summary or '' }}" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Caveat:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --peach: #FED7AA; --peach-soft: #FFEDD5; --sage: #DCFCE7; --sage-deep: #65A30D;
+      --cream: #FFFBF5; --warm-bg: #FFF7ED;
+      --ink: #2D1B0E; --ink-soft: #5C4533; --muted: #92816F; --accent: #F97316; --border: #F5E6D8;
+    }
+    body { background: var(--warm-bg); color: var(--ink); font-family: 'DM Sans', sans-serif; line-height: 1.65; font-size: 16px; }
+    .hand { font-family: 'Caveat', cursive; }
+
+    .page { max-width: 880px; margin: 0 auto; padding: 3rem 1.5rem; }
+
+    /* ── Header card ── */
+    header { background: var(--cream); border: 1px solid var(--border); border-radius: 24px; padding: 2.5rem; margin-bottom: 1.5rem; box-shadow: 0 1px 0 rgba(0,0,0,0.02); }
+    header .greeting { font-family: 'Caveat', cursive; font-size: 1.6rem; color: var(--accent); margin-bottom: 0.5rem; }
+    header h1 { font-size: clamp(2rem, 4.5vw, 3rem); font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; color: var(--ink); margin-bottom: 0.5rem; }
+    header .role { font-size: 1.1rem; color: var(--ink-soft); margin-bottom: 1.25rem; }
+    header .summary { color: var(--ink-soft); font-size: 0.98rem; line-height: 1.7; }
+    header .links { display: flex; gap: 0.5rem; margin-top: 1.5rem; flex-wrap: wrap; }
+    header .links a { font-size: 0.85rem; padding: 0.45rem 0.95rem; border-radius: 999px; background: var(--peach-soft); color: var(--ink); text-decoration: none; transition: background 0.15s; font-weight: 500; }
+    header .links a:hover { background: var(--peach); }
+
+    /* ── Section card ── */
+    section { background: var(--cream); border: 1px solid var(--border); border-radius: 20px; padding: 2rem; margin-bottom: 1rem; }
+    .section-tag { display: inline-block; background: var(--sage); color: var(--sage-deep); font-size: 0.7rem; font-weight: 600; padding: 0.2rem 0.65rem; border-radius: 999px; margin-bottom: 0.85rem; letter-spacing: 0.04em; text-transform: uppercase; }
+    .section-title { font-size: 1.45rem; font-weight: 700; color: var(--ink); margin-bottom: 1.25rem; letter-spacing: -0.01em; }
+
+    /* ── Items ── */
+    .item { padding: 1rem 0; border-bottom: 1px dashed var(--border); }
+    .item:last-child { border-bottom: none; padding-bottom: 0; }
+    .item:first-child { padding-top: 0; }
+    .item .top { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; flex-wrap: wrap; }
+    .item h3 { font-size: 1.05rem; font-weight: 600; color: var(--ink); }
+    .item .date { font-size: 0.78rem; color: var(--muted); background: var(--warm-bg); padding: 0.18rem 0.5rem; border-radius: 999px; white-space: nowrap; }
+    .item .sub { color: var(--ink-soft); font-size: 0.9rem; font-weight: 500; margin-top: 0.2rem; }
+    .item .desc { color: var(--ink-soft); font-size: 0.95rem; line-height: 1.65; margin-top: 0.4rem; }
+
+    /* ── Skills ── */
+    .skills { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .skills span { background: var(--peach-soft); color: var(--ink); font-size: 0.82rem; padding: 0.35rem 0.85rem; border-radius: 999px; font-weight: 500; transition: background 0.15s; }
+    .skills span:hover { background: var(--peach); }
+
+    footer { text-align: center; padding-top: 2rem; font-size: 0.78rem; color: var(--muted); }
+    footer .hand { color: var(--accent); font-size: 1.05rem; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <div class="greeting">Hi, I&apos;m</div>
+      <h1>{{ name }}</h1>
+      <div class="role">{{ headline or role or 'Designer & Creator' }}</div>
+      {% if summary or hero_description %}
+      <p class="summary">{{ summary or hero_description }}</p>
+      {% endif %}
+      <div class="links">
+        {% if email %}<a href="mailto:{{ email }}">{{ email }}</a>{% endif %}
+        {% if website %}<a href="{{ website }}" target="_blank" rel="noopener">website</a>{% endif %}
+        {% if location %}<span class="links" style="background:transparent;padding:0.45rem 0;">📍 {{ location }}</span>{% endif %}
+      </div>
+    </header>
+
+    {% if experience %}
+    <section>
+      <span class="section-tag">Experience</span>
+      <h2 class="section-title">Where I&apos;ve worked</h2>
+      {% for job in experience %}
+      <div class="item">
+        <div class="top">
+          <h3>{{ job.title }}</h3>
+          <span class="date">{{ job.start_date }}{% if job.end_date %} – {{ job.end_date }}{% else %} – now{% endif %}</span>
+        </div>
+        <div class="sub">{{ job.company }}{% if job.location %} · {{ job.location }}{% endif %}</div>
+        {% if job.description %}<div class="desc">{{ job.description }}</div>{% endif %}
+      </div>
+      {% endfor %}
+    </section>
+    {% endif %}
+
+    {% if projects %}
+    <section>
+      <span class="section-tag">Projects</span>
+      <h2 class="section-title">Things I&apos;ve built</h2>
+      {% for proj in projects %}
+      <div class="item">
+        <div class="top">
+          <h3>{{ proj.name }}</h3>
+          {% if proj.url %}<a class="date" href="{{ proj.url }}" target="_blank" rel="noopener" style="background:var(--sage);color:var(--sage-deep);text-decoration:none;">visit →</a>{% endif %}
+        </div>
+        {% if proj.description %}<div class="desc">{{ proj.description }}</div>{% endif %}
+      </div>
+      {% endfor %}
+    </section>
+    {% endif %}
+
+    {% if skills %}
+    <section>
+      <span class="section-tag">Skills</span>
+      <h2 class="section-title">My toolbox</h2>
+      <div class="skills">
+        {% for skill in skills %}<span>{{ skill }}</span>{% endfor %}
+      </div>
+    </section>
+    {% endif %}
+
+    {% if education %}
+    <section>
+      <span class="section-tag">Education</span>
+      <h2 class="section-title">Where I studied</h2>
+      {% for edu in education %}
+      <div class="item">
+        <div class="top">
+          <h3>{{ edu.degree }}</h3>
+          <span class="date">{{ edu.year or edu.end_date }}</span>
+        </div>
+        <div class="sub">{{ edu.institution }}</div>
+      </div>
+      {% endfor %}
+    </section>
+    {% endif %}
+
+    <footer>
+      Made with <span class="hand">love</span> · VyroPortify
+    </footer>
+  </div>
+</body>
+</html>

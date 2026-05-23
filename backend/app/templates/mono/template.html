@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ name }} — Portfolio</title>
+  <meta name="description" content="{{ hero_description or summary or '' }}" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --ink: #000; --gray: #555; --light: #999; --border: #e5e5e5; --bg: #fff; }
+    body { background: var(--bg); color: var(--ink); font-family: 'Newsreader', Georgia, serif; line-height: 1.65; font-size: 17px; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+
+    .page { max-width: 680px; margin: 0 auto; padding: 5rem 1.5rem 4rem; }
+
+    /* ── Header ── */
+    header { padding-bottom: 2.5rem; border-bottom: 1px solid var(--border); margin-bottom: 3rem; }
+    header .label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.18em; color: var(--light); font-family: 'JetBrains Mono', monospace; margin-bottom: 1rem; }
+    header h1 { font-size: clamp(2.25rem, 5vw, 3.5rem); font-weight: 500; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 0.5rem; }
+    header .role { font-size: 1.05rem; color: var(--gray); font-style: italic; }
+    header .meta { display: flex; gap: 1.5rem; margin-top: 1.5rem; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: var(--gray); }
+    header .meta a { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--border); padding-bottom: 1px; }
+    header .meta a:hover { border-color: var(--ink); }
+
+    /* ── Section ── */
+    section { padding: 3rem 0; border-bottom: 1px solid var(--border); }
+    section:last-of-type { border-bottom: none; }
+    .section-num { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: var(--light); letter-spacing: 0.12em; margin-bottom: 0.4rem; }
+    .section-title { font-size: 1.4rem; font-weight: 500; letter-spacing: -0.015em; margin-bottom: 1.5rem; }
+    .section p { font-size: 1.05rem; line-height: 1.75; color: var(--gray); margin-bottom: 1rem; }
+    .section p:last-child { margin-bottom: 0; }
+
+    /* ── Lists ── */
+    .item { padding: 1.25rem 0; border-bottom: 1px solid var(--border); }
+    .item:last-child { border-bottom: none; }
+    .item .top { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; flex-wrap: wrap; }
+    .item h3 { font-size: 1.1rem; font-weight: 500; letter-spacing: -0.005em; }
+    .item .date { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: var(--light); white-space: nowrap; }
+    .item .sub { color: var(--gray); font-size: 0.95rem; font-style: italic; margin-top: 0.15rem; margin-bottom: 0.6rem; }
+    .item .desc { color: var(--gray); font-size: 0.98rem; }
+
+    /* ── Skills inline ── */
+    .skills { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: var(--gray); line-height: 2; }
+    .skills span { display: inline-block; }
+    .skills span:not(:last-child)::after { content: ' · '; color: var(--light); margin: 0 0.25rem; }
+
+    footer { padding-top: 3rem; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--light); letter-spacing: 0.05em; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <div class="label">// Portfolio · {{ year or '2026' }}</div>
+      <h1>{{ name }}</h1>
+      <div class="role">{{ headline or role or 'Engineer & Writer' }}</div>
+      <div class="meta">
+        {% if email %}<a href="mailto:{{ email }}">{{ email }}</a>{% endif %}
+        {% if location %}<span>{{ location }}</span>{% endif %}
+        {% if website %}<a href="{{ website }}" target="_blank" rel="noopener">{{ website|replace('https://','')|replace('http://','') }}</a>{% endif %}
+      </div>
+    </header>
+
+    {% if summary or hero_description %}
+    <section>
+      <div class="section-num">01 — About</div>
+      <h2 class="section-title">A short note</h2>
+      <p>{{ summary or hero_description }}</p>
+    </section>
+    {% endif %}
+
+    {% if experience %}
+    <section>
+      <div class="section-num">02 — Work</div>
+      <h2 class="section-title">Experience</h2>
+      {% for job in experience %}
+      <div class="item">
+        <div class="top">
+          <h3>{{ job.title }}</h3>
+          <div class="date">{{ job.start_date }}{% if job.end_date %} → {{ job.end_date }}{% else %} → now{% endif %}</div>
+        </div>
+        <div class="sub">{{ job.company }}{% if job.location %} · {{ job.location }}{% endif %}</div>
+        {% if job.description %}<div class="desc">{{ job.description }}</div>{% endif %}
+      </div>
+      {% endfor %}
+    </section>
+    {% endif %}
+
+    {% if education %}
+    <section>
+      <div class="section-num">03 — Education</div>
+      <h2 class="section-title">Studies</h2>
+      {% for edu in education %}
+      <div class="item">
+        <div class="top">
+          <h3>{{ edu.degree }}</h3>
+          <div class="date">{{ edu.year or edu.end_date }}</div>
+        </div>
+        <div class="sub">{{ edu.institution }}</div>
+      </div>
+      {% endfor %}
+    </section>
+    {% endif %}
+
+    {% if skills %}
+    <section>
+      <div class="section-num">04 — Skills</div>
+      <h2 class="section-title">Tools & topics</h2>
+      <div class="skills">
+        {% for skill in skills %}<span>{{ skill }}</span>{% endfor %}
+      </div>
+    </section>
+    {% endif %}
+
+    {% if projects %}
+    <section>
+      <div class="section-num">05 — Projects</div>
+      <h2 class="section-title">Selected work</h2>
+      {% for proj in projects %}
+      <div class="item">
+        <div class="top">
+          <h3>{{ proj.name }}</h3>
+          {% if proj.url %}<a class="date" href="{{ proj.url }}" target="_blank" rel="noopener">visit ↗</a>{% endif %}
+        </div>
+        {% if proj.description %}<div class="desc">{{ proj.description }}</div>{% endif %}
+      </div>
+      {% endfor %}
+    </section>
+    {% endif %}
+
+    <footer>// Built with VyroPortify</footer>
+  </div>
+</body>
+</html>
