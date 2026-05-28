@@ -1,110 +1,122 @@
 "use client";
 
-import { motion, useInView } from "framer-motion";
-import { useRef } from "react";
-import { Upload, Sparkles, Globe } from "lucide-react";
+import { motion } from "framer-motion";
+import { ArrowRight, FileText, CheckCircle2, Globe } from "lucide-react";
 import FadeUp from "./FadeUp";
 
-const STEPS = [
+const RAW_RESUME = `Alex Johnson
+Software Engineer · San Francisco
+
+EXPERIENCE
+Senior Engineer, Acme Corp  2022–present
+- worked on backend
+- fixed production bugs
+- helped junior devs
+
+Engineer, StartupXYZ  2019–2022
+- built some React stuff
+- wrote Python scripts
+
+EDUCATION
+BS Computer Science, UC Davis  2019
+
+SKILLS
+React, Python, Node, AWS`;
+
+const PORTFOLIO_SECTIONS = [
   {
-    n: "01",
-    icon: Upload,
-    title: "Add your experience",
-    body: "Upload a PDF resume or fill out our 12-question AI Resume Builder. Takes less than 5 minutes — we handle the rest.",
-    color: "var(--pf-accent)",
-    glow: "rgba(108,99,255,0.35)",
+    label: "Headline",
+    before: "Senior Engineer, Acme Corp",
+    after: "Senior Software Engineer building distributed systems that handle 40M+ requests/day",
   },
   {
-    n: "02",
-    icon: Sparkles,
-    title: "Claude AI writes your copy",
-    body: "Claude reads what you've worked on and writes a headline, bio, and bullet points. It also surfaces skills you might have forgotten to mention.",
-    color: "#00d4ff",
-    glow: "rgba(0,212,255,0.35)",
+    label: "Bio",
+    before: "worked on backend, fixed production bugs",
+    after: "5 years building backend infrastructure at scale. Led a team of 4 engineers through a zero-downtime migration from monolith to microservices. Reduced p99 latency by 62%.",
   },
   {
-    n: "03",
-    icon: Globe,
-    title: "Share your live portfolio",
-    body: "Pick a template (Aurora, Minimal, or Cyber), hit generate, and get a shareable URL in under 60 seconds. No design skills needed.",
-    color: "#ff6b9d",
-    glow: "rgba(255,107,157,0.35)",
+    label: "Skills",
+    before: "React, Python, Node, AWS",
+    after: "React · TypeScript · Python · Node.js · AWS (EC2, RDS, SQS) · PostgreSQL · Redis · Docker · Terraform",
   },
 ];
-
-function StepCard({ step, index }: { step: (typeof STEPS)[0]; index: number }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-60px" });
-
-  return (
-    <motion.div
-      ref={ref}
-      initial={{ opacity: 0, y: 32 }}
-      animate={inView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.6, delay: index * 0.15, ease: [0.21, 0.47, 0.32, 0.98] }}
-      className="group relative flex flex-col gap-5 rounded-2xl border border-border bg-card p-7 transition-all duration-300 hover:border-primary/30"
-    >
-      {/* Hover glow */}
-      <div
-        className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-500 group-hover:opacity-100"
-        style={{ background: `radial-gradient(circle at 50% 0%, ${step.glow} 0%, transparent 60%)` }}
-      />
-
-      {/* Step number */}
-      <div className="flex items-center justify-between">
-        <div
-          className="flex h-12 w-12 items-center justify-center rounded-xl"
-          style={{ background: `${step.color}18`, border: `1px solid ${step.color}30` }}
-        >
-          <step.icon className="h-5 w-5" style={{ color: step.color }} />
-        </div>
-        <span
-          className="font-mono text-5xl font-extrabold"
-          style={{ color: `${step.color}20` }}
-        >
-          {step.n}
-        </span>
-      </div>
-
-      <div>
-        <h3 className="text-lg font-bold text-foreground">{step.title}</h3>
-        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{step.body}</p>
-      </div>
-
-      {/* Connector line (not last) */}
-      {index < 2 && (
-        <div
-          className="absolute -right-px top-1/2 hidden h-px w-8 -translate-y-1/2 translate-x-full bg-border lg:block"
-        />
-      )}
-    </motion.div>
-  );
-}
 
 export default function HowItWorks() {
   return (
     <section id="how-it-works" className="relative px-6 py-28">
-      {/* Section glow */}
-      <div className="pointer-events-none absolute left-1/2 top-0 h-48 w-96 -translate-x-1/2 rounded-full bg-primary opacity-5 blur-3xl" />
-
       <div className="mx-auto max-w-6xl">
         <FadeUp className="mb-16 text-center">
           <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-primary">
             How it works
           </div>
           <h2 className="text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl">
-            How it works
+            This is what actually happens
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-muted-foreground">
-            No design tool. No code. Just fill in your experience and we handle the rest.
+            You paste your resume. Claude rewrites it into portfolio copy. Here&apos;s a real example.
           </p>
         </FadeUp>
 
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-          {STEPS.map((step, i) => (
-            <StepCard key={step.n} step={step} index={i} />
-          ))}
-        </div>
+        {/* Before / After */}
+        <FadeUp delay={0.1}>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start mb-10">
+
+            {/* Before — raw resume */}
+            <div className="rounded-2xl border border-border bg-card overflow-hidden">
+              <div className="flex items-center gap-2 px-5 py-3 border-b border-border bg-muted/20">
+                <FileText className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-semibold text-muted-foreground">Your resume (before)</span>
+              </div>
+              <pre className="px-5 py-4 font-mono text-[12px] leading-relaxed text-muted-foreground/70 whitespace-pre-wrap overflow-auto max-h-64">
+                {RAW_RESUME}
+              </pre>
+            </div>
+
+            {/* After — generated portfolio copy */}
+            <div className="rounded-2xl border border-primary/30 bg-card overflow-hidden">
+              <div className="flex items-center gap-2 px-5 py-3 border-b border-primary/20 bg-primary/5">
+                <CheckCircle2 className="h-4 w-4 text-primary" />
+                <span className="text-sm font-semibold text-primary">What Claude generates</span>
+              </div>
+              <div className="divide-y divide-border">
+                {PORTFOLIO_SECTIONS.map(({ label, before, after }) => (
+                  <div key={label} className="px-5 py-4">
+                    <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-2">{label}</div>
+                    <div className="flex flex-col gap-2">
+                      <div className="flex gap-2 items-start">
+                        <span className="text-[10px] font-semibold text-muted-foreground/40 w-10 shrink-0 pt-0.5">before</span>
+                        <span className="text-[12px] text-muted-foreground/50 line-through leading-relaxed">{before}</span>
+                      </div>
+                      <div className="flex gap-2 items-start">
+                        <span className="text-[10px] font-semibold text-primary/70 w-10 shrink-0 pt-0.5">after</span>
+                        <span className="text-[12px] text-foreground leading-relaxed">{after}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </FadeUp>
+
+        {/* Steps strip — condensed below the before/after */}
+        <FadeUp delay={0.2}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {[
+              { n: "01", title: "Paste your resume", body: "Upload a PDF or fill out 12 questions. Takes under 5 minutes." },
+              { n: "02", title: "Claude rewrites it", body: "Gets your headline, bio, bullet points, and skills — all in one pass." },
+              { n: "03", title: "Pick a template, go live", body: "Choose Aurora, Minimal, or Cyber. Your URL is ready in under 60 seconds." },
+            ].map(({ n, title, body }) => (
+              <div key={n} className="flex gap-4 items-start rounded-2xl border border-border bg-card p-5">
+                <span className="font-mono text-3xl font-extrabold text-primary/20 leading-none shrink-0">{n}</span>
+                <div>
+                  <div className="font-semibold text-foreground mb-1">{title}</div>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{body}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </FadeUp>
       </div>
     </section>
   );
