@@ -1,10 +1,30 @@
 version: "3.9"
 
+# =============================================================================
+# VyroPortify — Docker Compose (development / local)
+#
+# Secret management:
+#   - All credentials come from ./backend/.env (gitignored).
+#   - The `environment:` block below ONLY overrides non-secret service URLs
+#     (DATABASE_URL, REDIS_URL) so containers reach each other by service name.
+#   - Secrets (STRIPE_SECRET_KEY, ANTHROPIC_API_KEY, etc.) are loaded via
+#     `env_file` from ./backend/.env — that file MUST exist locally but is
+#     NEVER committed.
+#   - To set up: cp backend/.env.example backend/.env && fill in secrets.
+#
+# Production:
+#   - Do NOT use this file in production. Use Docker Swarm secrets,
+#     Kubernetes Secrets, AWS SSM Parameter Store, or Railway/Vercel env vars.
+#   - Remove the `--reload` flag and bind-mount volumes in production.
+# =============================================================================
+
 services:
   postgres:
     image: postgres:15-alpine
     restart: unless-stopped
     environment:
+      # Dev-only hardcoded credentials — fine for local containers.
+      # Production uses a managed database (Railway, RDS, Supabase, etc.)
       POSTGRES_USER: vyroportify
       POSTGRES_PASSWORD: vyroportify
       POSTGRES_DB: vyroportify
@@ -21,8 +41,9 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
+    # Bind to localhost only — never expose Redis to the public internet
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -37,10 +58,17 @@ services:
     ports:
       - "8000:8000"
     env_file:
+      # Contains all secrets. Must exist locally. NEVER commit this file.
+      # Setup: cp backend/.env.example backend/.env
       - ./backend/.env
     environment:
+      # Override service URLs to use Docker internal hostnames.
+      # These are not secrets — they just tell the container where to find
+      # the postgres and redis services within the Docker network.
       DATABASE_URL: postgresql+asyncpg://vyroportify:vyroportify@postgres:5432/vyroportify
       REDIS_URL: redis://redis:6379/0
+      # Disable debug mode inside the container (env.py default is False too)
+      DEBUG: "False"
     depends_on:
       postgres:
         condition: service_healthy
@@ -58,6 +86,7 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://vyroportify:vyroportify@postgres:5432/vyroportify
       REDIS_URL: redis://redis:6379/0
+      DEBUG: "False"
     depends_on:
       postgres:
         condition: service_healthy

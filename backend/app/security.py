@@ -48,7 +48,14 @@ _JWKS_CACHE: dict[str, Any] = {}
 _JWKS_FETCHED_AT: float = 0.0
 _JWKS_TTL = 3600  # seconds
 
-CLERK_JWKS_URL = settings.CLERK_JWKS_URL  # set in config / .env
+CLERK_JWKS_URL = settings.CLERK_JWKS_URL  # set via CLERK_JWKS_URL env var
+
+if not CLERK_JWKS_URL:
+    import logging as _logging
+    _logging.getLogger(__name__).warning(
+        "CLERK_JWKS_URL is not set — all authenticated requests will fail. "
+        "Set CLERK_JWKS_URL in your .env file."
+    )
 
 
 async def _get_jwks() -> dict[str, Any]:

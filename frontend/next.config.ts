@@ -42,8 +42,12 @@ const nextConfig: NextConfig = {
     ];
   },
 
-  // Enable source maps in production for Sentry
-  productionBrowserSourceMaps: true,
+  // Source maps in production:
+  // - Server-side source maps are SAFE (never sent to the browser).
+  // - Browser source maps EXPOSE your source code to anyone opening DevTools.
+  //   Only enable if you use Sentry's hidden-source-map upload (which deletes
+  //   the public .map files after uploading). Default: off.
+  productionBrowserSourceMaps: false,
 
   // Strict mode for catching bugs early
   reactStrictMode: true,

@@ -7,15 +7,34 @@ on:
     branches: [main, develop]
 
 env:
-  # Minimal env vars so the app can import without crashing
+  # ── CI-only environment variables ───────────────────────────────────────────
+  # These are safe test/placeholder values used only in CI.
+  # Real production secrets MUST be stored in:
+  #   GitHub → Settings → Secrets → Actions
+  # and referenced as ${{ secrets.MY_SECRET }} — never hardcoded here.
+  #
+  # Required GitHub Secrets for production deploys (add under repo Settings):
+  #   RAILWAY_TOKEN        — Railway deploy token
+  #   VERCEL_TOKEN         — Vercel deploy token
+  #   ANTHROPIC_API_KEY    — Real AI key (prod deploys only)
+  #   OPENROUTER_API_KEY   — Real OpenRouter key (prod deploys only)
+  #   STRIPE_SECRET_KEY    — Real Stripe key (prod deploys only)
+  #   CLERK_SECRET_KEY     — Real Clerk key (prod deploys only)
+  #   CLERK_JWKS_URL       — Real Clerk JWKS URL (prod deploys only)
+  # ────────────────────────────────────────────────────────────────────────────
   DATABASE_URL: "sqlite+aiosqlite:///:memory:"
-  ANTHROPIC_API_KEY: "sk-test-placeholder"
+  # Placeholder AI key — tests mock all LLM calls; no real API is hit
+  ANTHROPIC_API_KEY: "sk-ant-test-placeholder-for-ci-only"
+  OPENROUTER_API_KEY: "sk-or-test-placeholder-for-ci-only"
+  # Generic JWKS endpoint — tests mock JWT verification
   CLERK_JWKS_URL: "https://example.clerk.accounts.dev/.well-known/jwks.json"
   STRIPE_SECRET_KEY: ""
   STRIPE_WEBHOOK_SECRET: ""
   REDIS_URL: "redis://localhost:6379/0"
-  SECRET_KEY: "test-secret-key-at-least-32-chars-long!!"
+  # CI-only secret key — 32+ chars, not used outside test environments
+  SECRET_KEY: "ci-only-test-secret-key-32chars!!"
   ENVIRONMENT: "development"
+  DEBUG: "False"
   NEXT_PUBLIC_API_URL: "http://localhost:8000/api/v1"
 
 jobs:
