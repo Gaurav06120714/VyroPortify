@@ -35,52 +35,44 @@ function getSystemTheme(): ResolvedTheme {
 const PALETTE_KEY = "portify-palette";
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [mode, setModeState] = useState<ThemeMode>("dark");
-  const [resolved, setResolved] = useState<ResolvedTheme>("dark");
+  // Light-mode-only build (Jun 2026). The mode state is preserved so the
+  // public API of useTheme() doesn't break for existing consumers, but
+  // setMode is now a no-op and the resolved theme is permanently "light".
+  // The palette axis (Aurora vs Clarity) is still user-selectable.
+  const [mode] = useState<ThemeMode>("light");
+  const [resolved] = useState<ResolvedTheme>("light");
   const [palette, setPaletteState] = useState<Palette>("aurora");
 
-  // Load saved preferences
+  // Load saved palette preference. Theme mode is intentionally not loaded
+  // from storage anymore — light is the only allowed value.
   useEffect(() => {
-    const saved = localStorage.getItem("portify-theme") as ThemeMode | null;
-    if (saved && ["light", "dark", "system"].includes(saved)) {
-      setModeState(saved);
-    }
     const savedPalette = localStorage.getItem(PALETTE_KEY) as Palette | null;
     if (savedPalette === "clarity" || savedPalette === "aurora") {
       setPaletteState(savedPalette);
     }
+    // Defensively clear any stale value users might have set in the past
+    // so existing browsers don't keep forcing dark via cached storage.
+    try {
+      localStorage.setItem("portify-theme", "light");
+    } catch {
+      /* ignore */
+    }
   }, []);
 
-  // Resolve theme and listen for system changes
+  // Hard-pin light mode on <html> every render so nothing else can flip it.
   useEffect(() => {
-    const r = mode === "system" ? getSystemTheme() : mode;
-    setResolved(r);
-
-    // Apply to <html> for global CSS access
-    document.documentElement.setAttribute("data-theme", r);
-    document.documentElement.classList.toggle("dark", r === "dark");
-
-    if (mode === "system") {
-      const mq = window.matchMedia("(prefers-color-scheme: dark)");
-      const handler = (e: MediaQueryListEvent) => {
-        const newTheme = e.matches ? "dark" : "light";
-        setResolved(newTheme);
-        document.documentElement.setAttribute("data-theme", newTheme);
-        document.documentElement.classList.toggle("dark", newTheme === "dark");
-      };
-      mq.addEventListener("change", handler);
-      return () => mq.removeEventListener("change", handler);
-    }
-  }, [mode]);
+    document.documentElement.setAttribute("data-theme", "light");
+    document.documentElement.classList.remove("dark");
+  }, []);
 
   // Apply palette to <html>. Independent axis from light/dark.
   useEffect(() => {
     document.documentElement.setAttribute("data-palette", palette);
   }, [palette]);
 
-  const setMode = useCallback((m: ThemeMode) => {
-    setModeState(m);
-    localStorage.setItem("portify-theme", m);
+  // No-op: light-only build. Kept on the context so consumers compile.
+  const setMode = useCallback((_m: ThemeMode) => {
+    /* intentionally no-op */
   }, []);
 
   const setPalette = useCallback((p: Palette) => {

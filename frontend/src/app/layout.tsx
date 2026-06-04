@@ -33,10 +33,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <html lang="en" suppressHydrationWarning>
         <head>
-          {/* Anti-flash: resolve theme + palette before React hydrates so
-              CSS variables are correct on the very first paint. v1.7.0
-              extends the original script to also apply data-palette. */}
-          <script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem('portify-theme')||'dark';var r=t==='system'?(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):t;document.documentElement.setAttribute('data-theme',r);document.documentElement.classList.toggle('dark',r==='dark');var p=localStorage.getItem('portify-palette');if(p==='clarity'||p==='aurora'){document.documentElement.setAttribute('data-palette',p)}else{document.documentElement.setAttribute('data-palette','aurora')}}catch(e){document.documentElement.classList.add('dark');document.documentElement.setAttribute('data-palette','aurora')}` }} />
+          {/* Pre-hydration palette resolver. Theme is locked to "light"
+              (light-mode-only build, Jun 2026), so only the palette axis
+              is resolved here. */}
+          <script dangerouslySetInnerHTML={{ __html: `try{document.documentElement.setAttribute('data-theme','light');document.documentElement.classList.remove('dark');var p=localStorage.getItem('portify-palette');document.documentElement.setAttribute('data-palette',(p==='clarity'||p==='aurora')?p:'aurora')}catch(e){document.documentElement.setAttribute('data-theme','light');document.documentElement.setAttribute('data-palette','aurora')}` }} />
         </head>
         <body
           className={`${inter.variable} ${geistMono.variable} antialiased`}
