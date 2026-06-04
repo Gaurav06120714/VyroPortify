@@ -318,6 +318,40 @@ npx playwright test
 
 ---
 
+## 🔐 Authentication — Password, Email OTP & Phone OTP
+
+VyroPortify supports **three sign-in methods**, all powered by Clerk:
+
+| Method | How it works |
+|---|---|
+| **Email + Password** | Classic credential login |
+| **Email OTP** | One-time 6-digit code sent to the user's email |
+| **Phone OTP (SMS)** | One-time 6-digit code sent via SMS |
+| **Social (Google, GitHub)** | OAuth single-click sign-in |
+
+The `<SignIn />` and `<SignUp />` components on `/login` and `/register` automatically render whichever factors are enabled in the Clerk dashboard — **no code change is required**.
+
+### Enable OTP (one-time setup)
+
+1. Open the **Clerk Dashboard** → your project → **User & Authentication → Email, Phone, Username**.
+2. Toggle on:
+   - ✅ **Email address** → *Verification: Email verification code*
+   - ✅ **Phone number** → *Verification: SMS verification code*
+3. Under **User & Authentication → Authentication strategies**, enable:
+   - ✅ **Email verification code**
+   - ✅ **SMS verification code**
+   - (keep) **Password**, **Google**, **GitHub**
+4. Save. The login/register pages immediately offer OTP options.
+
+> 💡 Phone OTP requires a Clerk plan with SMS credits. Free tier ships ~100 SMS/mo.
+
+### Backend impact
+
+- Backend treats every authenticated request the same way — it verifies the Clerk JWT via JWKS (`app/security.py`). OTP vs password vs social is transparent to the API.
+- New users created via OTP are auto-provisioned on first authenticated call (existing behavior).
+
+---
+
 ## 🛡 Security & Performance
 
 - **Rate limiting** — SlowAPI: 10 req/min on all AI endpoints
@@ -339,6 +373,248 @@ VyroPortify ships with a full **Light / Dark / System** theme:
 - `ThemeContext` applies the `dark` class to `<html>` and persists to `localStorage`
 - Anti-flash inline script in `layout.tsx` resolves theme before first paint
 - Smooth 200ms transitions across all color properties
+
+---
+
+## 🗺 Versioned Release Roadmap
+
+A milestone-driven plan. Every sub-version ends with a **Review Gate → Commit → Tag → Push**. No work begins on the next sub-version until the gate passes.
+
+### Version Map
+
+| Version | Theme | Window |
+|---|---|---|
+| **v1.0** | MVP baseline (frozen, tagged) | now |
+| **v1.1** | Foundation & Stability — authz, plan-gating, webhook hardening | 2–3 wk |
+| **v1.2** | Core Feature Completion — email, custom domains, AI hardening, OG images, pagination | 3–4 wk |
+| **v1.3** | UI/UX Modernization Pt.1 — design tokens, shadcn/ui, toasts, skeletons | 3 wk |
+| **v1.4** | UI/UX Modernization Pt.2 — cmd-K, shortcuts, onboarding, settings, DataTable | 3 wk |
+| **v1.5** | Performance & Security — OpenTelemetry, perf budgets, scans, CSP enforce | 2–3 wk |
+| **v1.6** | Production Readiness — backups, DR, runbooks, readiness probes, deploy workflows | 2 wk |
+| **v2.0** | Enterprise GA — team workspaces, RBAC, audit-log UI, analytics, billing v2 | 6–8 wk |
+| **v2.1** | Template marketplace (community + paid via Stripe Connect) | 4 wk |
+| **v2.2** | i18n + PWA + mobile polish | 3 wk |
+| **v3.0** | Platform — public API, webhooks, OAuth apps, white-label, SOC 2, SSO/SAML | 8–10 wk |
+
+### v1.1 — Foundation & Stability
+
+| Sub | Scope | Effort | Risk |
+|---|---|---|---|
+| v1.1.0 | Authorization audit + `assert_owner()` helper + cross-tenant tests | 4 d | High |
+| v1.1.1 | Backend `require_plan("pro")` dependency on all Pro endpoints | 2 d | Med |
+| v1.1.2 | Stripe webhook idempotency (Redis 24h TTL) + replay protection | 2 d | High |
+| v1.1.3 | `error.tsx`, `global-error.tsx`, route-level boundaries | 1 d | Low |
+| v1.1.4 | Repo hygiene: PG version pin, duplicate file cleanup, doc sync | 1 d | Low |
+
+### v1.2 — Core Feature Completion
+
+| Sub | Scope | Effort | Risk |
+|---|---|---|---|
+| v1.2.0 | Transactional email (Resend): welcome, publish, plan-change | 3 d | Low |
+| v1.2.1 | Custom domain (Pro) — CNAME verify + DB field + attach API | 5 d | High |
+| v1.2.2 | AI hardening — prompt caching, provider failover, cost telemetry | 3 d | Med |
+| v1.2.3 | OG image generation via `@vercel/og` | 1 d | Low |
+| v1.2.4 | Cursor pagination on list endpoints | 2 d | Low |
+
+### v1.3 — UI/UX Modernization Pt.1
+
+| Sub | Scope | Effort |
+|---|---|---|
+| v1.3.0 | Design tokens in `tailwind.config.ts` | 2 d |
+| v1.3.1 | shadcn/ui primitives (Button, Input, Dialog, etc.) | 4 d |
+| v1.3.2 | Toast (`sonner`) wired in `Providers.tsx` | 1 d |
+| v1.3.3 | Skeleton variants + empty states with illustrations | 2 d |
+| v1.3.4 | Typography scale + motion (respects `prefers-reduced-motion`) | 1 d |
+
+### v1.4 — UI/UX Modernization Pt.2
+
+| Sub | Scope | Effort |
+|---|---|---|
+| v1.4.0 | `cmdk` command palette | 2 d |
+| v1.4.1 | Keyboard shortcuts + `?` cheatsheet | 1 d |
+| v1.4.2 | Onboarding checklist + sample portfolio seed | 3 d |
+| v1.4.3 | Settings sub-nav architecture | 2 d |
+| v1.4.4 | Portfolios DataTable (TanStack) — sort/filter/bulk | 3 d |
+
+### v1.5 — Performance & Security
+
+| Sub | Scope | Effort |
+|---|---|---|
+| v1.5.0 | OpenTelemetry (FastAPI + Celery + Next.js) → Grafana | 3 d |
+| v1.5.1 | Lighthouse-CI budgets (LCP ≤ 2.5s, CLS ≤ 0.1) | 2 d |
+| v1.5.2 | Rate limiting on `/auth/*`, `/billing/*`, public reads | 1 d |
+| v1.5.3 | Dependabot + Trivy + pip-audit + gitleaks + SBOM | 1 d |
+| v1.5.4 | CSP report-only → enforce | 1 d + 1 wk observation |
+
+### v1.6 — Production Readiness
+
+| Sub | Scope | Effort |
+|---|---|---|
+| v1.6.0 | PG snapshots (30d retention), R2 versioning, restore drill | 3 d |
+| v1.6.1 | Runbooks, on-call rotation, postmortem template | 2 d |
+| v1.6.2 | `/readiness` probe + autoscaling policy | 1 d |
+| v1.6.3 | Schemathesis contract tests (nightly) | 2 d |
+| v1.6.4 | `deploy-frontend.yml` + `deploy-backend.yml` with canary | 2 d |
+
+### v2.0 — Enterprise GA
+
+| Sub | Scope | Effort | Risk |
+|---|---|---|---|
+| v2.0.0 | Team workspaces (`Organization`, `Membership`) | 8 d | High |
+| v2.0.1 | RBAC (owner/admin/editor/viewer) | 4 d | Med |
+| v2.0.2 | Audit log UI (search/export) | 3 d | Low |
+| v2.0.3 | Per-portfolio analytics (views/visitors/geo/CTR) | 4 d | Med |
+| v2.0.4 | Billing v2 — per-seat + usage add-ons | 4 d | High |
+| v2.0.5 | Backfill: personal accounts → single-member orgs | 3 d | High |
+
+### v2.1 — Template Marketplace
+v2.1.0 community submission + moderation · v2.1.1 paid templates via Stripe Connect · v2.1.2 ratings/reviews/search
+
+### v2.2 — i18n + PWA + Mobile
+v2.2.0 `next-intl` (en/es/fr/de/hi/ja) · v2.2.1 PWA manifest + service worker · v2.2.2 mobile gestures + bottom-tab nav
+
+### v3.0 — Platform
+v3.0.0 public REST API + keys · v3.0.1 outbound webhooks · v3.0.2 OAuth2 third-party apps · v3.0.3 white-label · v3.0.4 SOC 2 controls · v3.0.5 SSO/SAML
+
+---
+
+## 🧰 Development Workflow
+
+### Branching — *Trunk-based with short-lived release branches*
+
+```
+main                ← always deployable, protected
+├── release/v1.x    ← cut at start of a minor; only fixes merged
+├── feat/<slug>     ← short-lived (<3 days), squash-merge to main
+├── fix/<slug>      ← bugfix branches
+├── chore/<slug>    ← deps, infra, docs
+└── hotfix/<slug>   ← from tag, merged to main + release/*
+```
+
+### Commit Convention — *Conventional Commits*
+
+```
+<type>(<scope>): <subject>
+
+types: feat | fix | chore | docs | refactor | perf | test | build | ci | security | revert
+scopes: frontend | backend | db | auth | billing | ai | infra | ui | a11y | deps
+```
+
+Example: `feat(auth): enable email + phone OTP via clerk`
+
+### Pull Request Requirements
+
+- Linked issue + version label (e.g. `v1.1`)
+- Description: **What / Why / How / Test plan / Screenshots**
+- Checklist: tests added · types pass · lint clean · a11y unchanged · docs updated
+- **2 approvals** for `feat`/`security`; **1 approval** for `fix`/`chore`
+- All CI status checks green
+- Rebase if branch is > 10 commits behind `main`
+
+### Quality Gates (required CI checks)
+
+1. `lint` — ruff + black + isort + eslint + prettier
+2. `typecheck` — mypy + `tsc --noEmit`
+3. `test-backend` — pytest with coverage gate
+4. `test-frontend` — vitest with coverage gate
+5. `e2e` — Playwright smoke suite
+6. `a11y` — axe-core
+7. `lighthouse-ci` — perf/SEO/a11y budgets
+8. `security-scan` — Trivy + npm audit + pip-audit
+9. `openapi-diff` — breaking API changes require `!` in commit
+
+### Sub-Version Review Gate (mandatory before tag)
+
+| Step | Owner | Pass criteria |
+|---|---|---|
+| 1. Scope review | Tech lead | All listed deliverables present |
+| 2. Architecture review | Architect | Implementation matches ADRs |
+| 3. Code review | 2 reviewers | All comments resolved |
+| 4. Test review | QA | Coverage ≥ gate; no skipped tests |
+| 5. Performance check | Eng | p95 API < 300ms; LCP < 2.5s |
+| 6. Regression sweep | QA | Full Playwright suite green |
+| 7. Security review | Security | Scans clean; new endpoints rate-limited & authz-tested |
+| 8. Docs update | Author | README / CHANGELOG / ADR updated |
+| 9. Manual QA | PM | Acceptance script passes on staging |
+| 10. Sign-off | Release manager | Approve → tag |
+
+### Release Procedure
+
+```bash
+# 1. bump versions + changelog
+npm version --no-git-tag-version <ver> -w frontend
+# bump backend pyproject.toml + update CHANGELOG.md
+
+# 2. commit
+git commit -m "chore(release): v1.1.0"
+
+# 3. annotated, signed tag
+git tag -s v1.1.0 -m "VyroPortify v1.1.0 — Foundation & Stability"
+
+# 4. push
+git push origin main --follow-tags
+
+# 5. GitHub release
+gh release create v1.1.0 --notes-from-tag
+
+# 6. Deploy: staging → smoke → prod canary 10% → 100%
+```
+
+### Rollback
+
+- **DB** — every migration has a tested down-migration OR documented forward-fix.
+- **Backend** — Railway redeploy previous image digest.
+- **Frontend** — Vercel promote previous deployment instantly.
+- **Feature flags** — risky features behind a flag; kill-switch first, redeploy second.
+- **DNS** — TTL ≤ 300s during rollouts.
+
+### Post-Release Verification
+
+- **T+0** — synthetic check: signup → upload → generate → publish on prod
+- **T+1h** — Sentry error rate ≤ baseline; p95 latency ≤ baseline
+- **T+24h** — PostHog funnel parity; no new Sentry spikes; cost dashboard normal
+
+### Coverage Targets by Version
+
+| Version | BE | FE | E2E | A11y | Lighthouse |
+|---|---|---|---|---|---|
+| v1.0 | 70% | 50% | smoke | optional | optional |
+| v1.1 | 80% | 55% | + auth/billing | warn | warn |
+| v1.2 | 80% | 60% | + email/domain | warn | warn |
+| v1.3 | 80% | 70% | + visual diff | **gate** | **gate** |
+| v1.4 | 80% | 75% | + kbd/cmd-K | gate | gate |
+| v1.5 | 85% | 80% | + perf script | gate | gate |
+| v1.6 | 85% | 80% | full | gate | gate |
+| v2.0 | 90% (billing 95%) | 80% | + multi-tenant | gate | gate |
+
+### Feature-Creep Controls
+
+1. **One version label per PR** — must match an open milestone.
+2. **Scope-lock** — when a sub-version branch is cut, scope freezes.
+3. **WIP limit** — max 3 open `feat/*` branches per sub-version.
+4. **Definition of Done** posted on every sub-version issue.
+5. **No drive-by refactors** — require a separate `refactor/*` PR.
+6. **Deprecation policy** — public-surface removal needs one minor-version notice.
+
+### Per-Release Checklist
+
+```
+[ ] All sub-version deliverables shipped
+[ ] CHANGELOG.md updated
+[ ] ADRs added/updated
+[ ] OpenAPI diff reviewed
+[ ] Migrations have down-paths or forward-fix doc
+[ ] Feature flags configured + default state set
+[ ] Lighthouse + axe gates green
+[ ] Security scans clean
+[ ] Coverage ≥ version target
+[ ] Manual QA script signed off (PM)
+[ ] Staging smoke green for 24h
+[ ] Rollback plan documented
+[ ] Tag created + signed
+[ ] Release notes published
+[ ] T+0 / T+1h / T+24h verification complete
+```
 
 ---
 
