@@ -270,11 +270,40 @@ async def get_public_portfolio(request: Request, slug: str, db: DB) -> Portfolio
     if p is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Portfolio not found")
 
-    # Increment view counter (best-effort, async)
+    # Increment view counter (best-effort, async) + insert a PortfolioView
+    # row for per-visitor analytics. Session token is SHA-256(ip + UA + day)
+    # so the same visitor on the same day collapses, no PII stored.
     try:
+        import hashlib
+        from datetime import date
+
+        from app.models.portfolio_view import PortfolioView
+
         p.views = (p.views or 0) + 1
+
+        client_ip = request.client.host if request.client else "unknown"
+        ua = request.headers.get("user-agent", "")
+        token = hashlib.sha256(
+            f"{client_ip}|{ua}|{date.today().isoformat()}".encode()
+        ).hexdigest()
+        referrer = (request.headers.get("referer") or "")[:255] or None
+        # CF-IPCountry / Vercel-IP-Country provide ISO-2 country codes for free.
+        country = (
+            request.headers.get("cf-ipcountry")
+            or request.headers.get("x-vercel-ip-country")
+        )
+        country = country[:2].upper() if country else None
+        db.add(
+            PortfolioView(
+                portfolio_id=p.id,
+                session_token=token,
+                referrer=referrer,
+                country=country,
+            )
+        )
         await db.commit()
     except Exception:
+        # Analytics failures must never 500 a public page view.
         pass
 
     response = _to_response(p)
@@ -324,6 +353,109 @@ async def delete_portfolio(
         await cache.delete(f"portfolio:public:{p.slug}")
     await db.delete(p)
     logger.info("Portfolio deleted id=%s user=%s", portfolio_id, current_user.id)
+
+
+# ── Analytics (v2.0.3) ─────────────────────────────────────────────────────────
+
+@router.get(
+    "/{portfolio_id}/analytics",
+    summary="Per-portfolio analytics summary (owner-only)",
+)
+async def portfolio_analytics(
+    portfolio_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DB,
+    days: int = 30,
+) -> dict:
+    p = await _get_portfolio_or_404(portfolio_id, current_user, db)
+
+    from datetime import datetime, timedelta, timezone
+
+    from sqlalchemy import func as sql_func
+
+    from app.models.portfolio_view import PortfolioView
+
+    days = max(1, min(days, 365))
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+
+    # Total + unique visitors in the window.
+    totals_q = await db.execute(
+        select(
+            sql_func.count(PortfolioView.id).label("total"),
+            sql_func.count(sql_func.distinct(PortfolioView.session_token)).label("unique"),
+        ).where(
+            PortfolioView.portfolio_id == p.id,
+            PortfolioView.created_at >= since,
+        )
+    )
+    totals = totals_q.one()
+
+    # Per-day buckets — server-formatted as ISO date strings for the
+    # frontend to drop straight into a chart.
+    by_day_q = await db.execute(
+        select(
+            sql_func.date_trunc("day", PortfolioView.created_at).label("day"),
+            sql_func.count(PortfolioView.id),
+        )
+        .where(
+            PortfolioView.portfolio_id == p.id,
+            PortfolioView.created_at >= since,
+        )
+        .group_by("day")
+        .order_by("day")
+    )
+    by_day = [
+        {"day": d.isoformat() if d else None, "views": int(c)}
+        for d, c in by_day_q.all()
+    ]
+
+    # Top referrers + top countries (capped).
+    referrers_q = await db.execute(
+        select(
+            PortfolioView.referrer,
+            sql_func.count(PortfolioView.id),
+        )
+        .where(
+            PortfolioView.portfolio_id == p.id,
+            PortfolioView.created_at >= since,
+            PortfolioView.referrer.isnot(None),
+        )
+        .group_by(PortfolioView.referrer)
+        .order_by(sql_func.count(PortfolioView.id).desc())
+        .limit(10)
+    )
+    referrers = [
+        {"referrer": r, "views": int(c)} for r, c in referrers_q.all()
+    ]
+
+    countries_q = await db.execute(
+        select(
+            PortfolioView.country,
+            sql_func.count(PortfolioView.id),
+        )
+        .where(
+            PortfolioView.portfolio_id == p.id,
+            PortfolioView.created_at >= since,
+            PortfolioView.country.isnot(None),
+        )
+        .group_by(PortfolioView.country)
+        .order_by(sql_func.count(PortfolioView.id).desc())
+        .limit(10)
+    )
+    countries = [
+        {"country": c, "views": int(n)} for c, n in countries_q.all()
+    ]
+
+    return {
+        "portfolio_id": str(p.id),
+        "window_days": days,
+        "total_views": int(totals.total or 0),
+        "unique_visitors": int(totals.unique or 0),
+        "lifetime_views": int(p.views or 0),
+        "by_day": by_day,
+        "referrers": referrers,
+        "countries": countries,
+    }
 
 
 # ── Custom domain (Pro) ────────────────────────────────────────────────────────
