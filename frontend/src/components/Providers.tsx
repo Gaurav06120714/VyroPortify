@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
+import { Toaster } from "sonner";
 import { initPostHog, identifyUser, resetPostHog } from "@/lib/posthog";
 import { initSentry, setUser, clearUser } from "@/lib/sentry";
 
@@ -30,5 +31,18 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     }
   }, [user, isLoaded]);
 
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      <Toaster
+        position="top-right"
+        richColors
+        closeButton
+        toastOptions={{
+          // Apply our token-based styling on top of the sonner default.
+          className: "border border-[var(--border)]",
+        }}
+      />
+    </>
+  );
 }

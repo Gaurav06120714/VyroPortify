@@ -198,3 +198,68 @@ body {
   --normal-border: var(--border);
   --normal-text: var(--foreground);
 }
+
+/* ── v1.3 design tokens ─────────────────────────────────────────────────────
+ * Categories that were missing from the original token set. Kept as CSS custom
+ * properties so they can be referenced from both Tailwind utility classes
+ * (`bg-[var(--pf-elev-1)]`) and inline styles.
+ */
+:root {
+  /* Spacing scale — multiples of 4px, matches Tailwind's default. */
+  --pf-space-1: 4px;  --pf-space-2: 8px;   --pf-space-3: 12px;
+  --pf-space-4: 16px; --pf-space-6: 24px;  --pf-space-8: 32px;
+  --pf-space-12: 48px; --pf-space-16: 64px; --pf-space-24: 96px;
+
+  /* Radius scale */
+  --pf-radius-sm: 6px; --pf-radius-md: 10px;
+  --pf-radius-lg: 14px; --pf-radius-xl: 20px;
+
+  /* Elevation — neutral shadow stack. */
+  --pf-elev-1: 0 1px 2px rgba(15,23,42,0.06), 0 1px 1px rgba(15,23,42,0.04);
+  --pf-elev-2: 0 4px 8px rgba(15,23,42,0.08), 0 2px 4px rgba(15,23,42,0.05);
+  --pf-elev-3: 0 12px 24px rgba(15,23,42,0.10), 0 4px 8px rgba(15,23,42,0.06);
+  --pf-elev-4: 0 24px 48px rgba(15,23,42,0.14), 0 12px 24px rgba(15,23,42,0.08);
+
+  /* Z-index scale */
+  --pf-z-dropdown: 1000;
+  --pf-z-sticky:   1100;
+  --pf-z-overlay:  1200;
+  --pf-z-modal:    1300;
+  --pf-z-popover:  1400;
+  --pf-z-toast:    1500;
+
+  /* Motion */
+  --pf-duration-fast: 120ms;
+  --pf-duration-base: 200ms;
+  --pf-duration-slow: 320ms;
+  --pf-ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
+  --pf-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Typography scale */
+  --pf-text-xs:  0.75rem;  --pf-leading-xs:  1rem;
+  --pf-text-sm:  0.875rem; --pf-leading-sm:  1.25rem;
+  --pf-text-md:  1rem;     --pf-leading-md:  1.5rem;
+  --pf-text-lg:  1.125rem; --pf-leading-lg:  1.75rem;
+  --pf-text-xl:  1.25rem;  --pf-leading-xl:  1.75rem;
+  --pf-text-2xl: 1.5rem;   --pf-leading-2xl: 2rem;
+  --pf-text-3xl: 1.875rem; --pf-leading-3xl: 2.25rem;
+  --pf-text-display: 2.5rem; --pf-leading-display: 1.1;
+}
+
+/* Honor prefers-reduced-motion globally. Animations still fire but with a
+ * minimal duration so layout shifts still resolve. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Focus ring — every interactive element should pick this up via focus-visible */
+:where(button, a, input, select, textarea, [role="button"], [tabindex]):focus-visible {
+  outline: 2px solid var(--pf-accent);
+  outline-offset: 2px;
+  border-radius: var(--pf-radius-md);
+}

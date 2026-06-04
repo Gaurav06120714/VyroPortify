@@ -1,0 +1,45 @@
+import type { LucideIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+interface EmptyStateProps {
+  icon?: LucideIcon;
+  title: string;
+  description?: string;
+  action?: React.ReactNode;
+  className?: string;
+}
+
+// Used on Portfolios, Templates, Analytics when the user has no items yet.
+// Pattern: muted icon, headline, one-line description, single primary CTA.
+export function EmptyState({
+  icon: Icon,
+  title,
+  description,
+  action,
+  className,
+}: EmptyStateProps) {
+  return (
+    <div
+      className={cn(
+        "flex flex-col items-center justify-center text-center py-16 px-6",
+        className,
+      )}
+    >
+      {Icon && (
+        <div
+          className="mb-4 flex h-16 w-16 items-center justify-center rounded-full
+                     bg-[var(--pf-accent-subtle)] text-[var(--pf-accent)]"
+        >
+          <Icon className="h-7 w-7" aria-hidden />
+        </div>
+      )}
+      <h3 className="text-lg font-semibold text-[var(--pf-text)]">{title}</h3>
+      {description && (
+        <p className="mt-1 max-w-sm text-sm text-[var(--pf-muted)]">
+          {description}
+        </p>
+      )}
+      {action && <div className="mt-6">{action}</div>}
+    </div>
+  );
+}
