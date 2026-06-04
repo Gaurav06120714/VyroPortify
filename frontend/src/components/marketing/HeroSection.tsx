@@ -7,32 +7,37 @@ export default function HeroSection() {
   return (
     <section className="flex min-h-dvh flex-col items-center justify-center px-6 pt-20 pb-24">
       <div className="mx-auto max-w-5xl text-center">
-        {/* Badge */}
-        <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[rgba(108,99,255,0.35)] bg-[var(--pf-border-dim)] px-4 py-1.5 text-sm font-medium text-[#a09bff]">
+        {/* Badge — token-driven so it picks up Clarity blue or Aurora
+            violet depending on the active palette. */}
+        <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[var(--pf-border-light)] bg-[var(--pf-accent-subtle)] px-4 py-1.5 text-sm font-medium text-[var(--pf-accent-text)]">
           <Sparkles className="h-3.5 w-3.5" />
           Built with Claude AI · Free to start
         </div>
 
-        {/* Headline */}
-        <h1 className="text-5xl font-extrabold leading-[1.08] tracking-tight text-foreground sm:text-6xl lg:text-7xl">
+        {/* Headline — uses v1.7.1 .text-display utilities for consistent
+            tracking and weight across the marketing surface. */}
+        <h1 className="text-display sm:text-display-lg text-[var(--pf-text)]">
           Turn your resume into{" "}
           <br />
           <span className="relative inline-block">
             a portfolio that gets you hired
-            <span className="absolute -bottom-1 left-0 h-[3px] w-full rounded-full bg-primary" />
+            <span className="absolute -bottom-1 left-0 h-[3px] w-full rounded-full bg-[var(--pf-accent)]" />
           </span>
         </h1>
 
         {/* Sub */}
-        <p className="mx-auto mt-7 max-w-2xl text-lg leading-relaxed text-muted-foreground sm:text-xl">
+        <p className="mx-auto mt-7 max-w-2xl text-lg leading-relaxed text-[var(--pf-muted)] sm:text-xl">
           Upload your resume or answer 12 quick questions. Claude reads your experience, writes the copy, and builds your portfolio. The whole thing takes about 60 seconds.
         </p>
 
         {/* CTAs */}
         <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+          {/* Primary CTA — Clarity uses warm amber (Gridlock pattern), Aurora
+              keeps the violet via the same accent var. We pick warm here
+              specifically because the hero is the single highest-intent CTA. */}
           <Link
             href="/register"
-            className="group flex items-center gap-2 rounded-2xl bg-primary px-7 py-3.5 text-base font-semibold text-primary-foreground transition-all hover:bg-primary/90"
+            className="group flex items-center gap-2 rounded-2xl bg-[var(--pf-cta-warm,var(--pf-accent))] px-7 py-3.5 text-base font-semibold text-white shadow-[var(--pf-elev-2)] transition-all hover:bg-[var(--pf-cta-warm-hover,var(--pf-accent-hover))]"
           >
             Generate your portfolio free
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
@@ -40,7 +45,7 @@ export default function HeroSection() {
 
           <Link
             href="#how-it-works"
-            className="flex items-center gap-2 rounded-2xl border border-border bg-background px-7 py-3.5 text-base font-semibold text-foreground/90 transition-all hover:border-primary/50 hover:bg-muted"
+            className="flex items-center gap-2 rounded-2xl border border-[var(--pf-border-light)] bg-[var(--pf-surface)] px-7 py-3.5 text-base font-semibold text-[var(--pf-text)] transition-all hover:border-[var(--pf-accent)] hover:bg-[var(--pf-surface2)]"
           >
             <Play className="h-4 w-4 fill-current" />
             See how it works

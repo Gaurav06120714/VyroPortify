@@ -188,7 +188,7 @@ export default function TemplateGallery() {
         <FadeUp delay={0.3} className="mt-10 text-center">
           <Link
             href="/register"
-            className="inline-flex items-center gap-2 rounded-xl border border-[var(--pf-border-medium)] px-6 py-3 text-sm font-semibold text-[#c8c8e8] transition-all hover:border-[rgba(108,99,255,0.55)] hover:bg-[var(--pf-border-subtle)]"
+            className="inline-flex items-center gap-2 rounded-xl border border-[var(--pf-border-medium)] px-6 py-3 text-sm font-semibold text-[var(--pf-text-dim)] transition-all hover:border-[var(--pf-border-hover)] hover:bg-[var(--pf-border-subtle)]"
           >
             Browse all templates <ArrowRight className="h-4 w-4" />
           </Link>
