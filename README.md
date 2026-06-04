@@ -391,6 +391,7 @@ A milestone-driven plan. Every sub-version ends with a **Review Gate → Commit 
 | **v1.4** | UI/UX Modernization Pt.2 — cmd-K, shortcuts, onboarding, settings, DataTable | 3 wk |
 | **v1.5** | Performance & Security — OpenTelemetry, perf budgets, scans, CSP enforce | 2–3 wk |
 | **v1.6** | Production Readiness — backups, DR, runbooks, readiness probes, deploy workflows | 2 wk |
+| **v1.7** | Visual Refresh + Unified Builder — Gridlock-inspired clean palette, merge build-resume form + preview into a single split-pane page | 2–3 wk |
 | **v2.0** | Enterprise GA — team workspaces, RBAC, audit-log UI, analytics, billing v2 | 6–8 wk |
 | **v2.1** | Template marketplace (community + paid via Stripe Connect) | 4 wk |
 | **v2.2** | i18n + PWA + mobile polish | 3 wk |
@@ -456,6 +457,147 @@ A milestone-driven plan. Every sub-version ends with a **Review Gate → Commit 
 | v1.6.2 | `/readiness` probe + autoscaling policy | 1 d |
 | v1.6.3 | Schemathesis contract tests (nightly) | 2 d |
 | v1.6.4 | `deploy-frontend.yml` + `deploy-backend.yml` with canary | 2 d |
+
+### v1.7 — Visual Refresh + Unified Builder
+
+**Inspiration**: [Gridlock 2.0 (HackerEarth × Flipkart)](https://gridlock2point0.hackerearth.com/) —
+clean, civic-modern aesthetic: white/off-white surfaces, deep-blue primary, warm
+amber accents for CTAs, modern sans-serif (system stack or Inter), generous
+whitespace, **no glows / no neon / no glassmorphism**. The current Aurora dark
+palette stays available as an alternate theme; the new "Clarity" palette
+becomes the default.
+
+| Sub | Scope | Effort | Risk |
+|---|---|---|---|
+| v1.7.0 | "Clarity" light palette — add token set + theme switch | 2 d | Low |
+| v1.7.1 | Typography pass — Inter / Geist Sans, refined scale | 1 d | Low |
+| v1.7.2 | Marketing + dashboard restyle to the new palette | 3 d | Med |
+| v1.7.3 | Unify `/dashboard/build-resume` + `/dashboard/portfolios/[id]/preview` into one split-pane page (`/dashboard/builder/[id]`) | 4 d | Med |
+| v1.7.4 | Live preview wiring — form changes patch a debounced preview iframe | 2 d | Med |
+| v1.7.5 | Mobile responsive — collapses to tabs (Edit / Preview) under `lg` | 1 d | Low |
+
+#### v1.7.0 — Clarity palette tokens
+
+Add a second theme alongside Aurora. Switchable via `data-theme` on `<html>`
+(set by `ThemeContext`).
+
+```css
+[data-theme="clarity"] {
+  --pf-bg:           #ffffff;
+  --pf-surface:      #fafbfc;
+  --pf-surface2:     #f4f6f8;
+  --pf-text:         #0f172a;       /* slate-900 */
+  --pf-text-dim:     #334155;       /* slate-700 */
+  --pf-muted:        #64748b;       /* slate-500 */
+  --pf-accent:       #2563eb;       /* Gridlock blue */
+  --pf-accent-hover: #1d4ed8;
+  --pf-accent-soft:  rgba(37,99,235,0.10);
+  --pf-cta-warm:     #f59e0b;       /* amber CTA */
+  --pf-border-light: rgba(15,23,42,0.08);
+  --pf-border:       rgba(15,23,42,0.14);
+  --pf-elev-1: 0 1px 2px rgba(15,23,42,0.04);
+  --pf-elev-2: 0 4px 12px rgba(15,23,42,0.06);
+}
+```
+
+- Honors the v1.5 contrast ratios (`--pf-text` on `--pf-bg` = 16:1).
+- The Aurora dark palette stays under `[data-theme="aurora"]`; theme toggle
+  flips between the two with anti-flash inline script.
+
+#### v1.7.1 — Typography
+
+- Headings & body: **Inter** (already loaded for the marketing site, extend
+  to dashboard) with Geist Sans fallback.
+- Type scale unchanged (uses v1.3 tokens).
+- Drop letter-spacing on display headings (-0.02em) to match Gridlock's
+  cleaner look.
+- Replace `font-extrabold` (800) on hero with `font-bold` (700) — less
+  shouty, matches the civic-modern feel.
+
+#### v1.7.2 — Restyle
+
+Page-by-page swap:
+- `(marketing)/page.tsx` — hero, features, pricing, FAQ
+- `(dashboard)/dashboard/page.tsx` — overview
+- `Sidebar.tsx` — accent → blue, hover → slate-50
+- Buttons → primary uses `--pf-accent`; warm CTA variant uses `--pf-cta-warm`
+- Cards → drop heavy shadow, add 1px slate-100 border instead
+- Remove all `shadow-[0_0_16px_var(--pf-border-hover)]` glow effects
+
+#### v1.7.3 — Unified Builder (the merge)
+
+Replace two pages with one:
+
+```
+/dashboard/build-resume          ─┐
+                                  ├─→  /dashboard/builder/[id]
+/dashboard/portfolios/[id]/preview ─┘
+```
+
+**Layout** (desktop, lg+):
+```
+┌─────────────────────────────────────────────────────────┐
+│  Header: Save status · Template picker · Publish ⌄      │
+├──────────────────────┬──────────────────────────────────┤
+│                      │                                  │
+│  Form (left, 480px)  │  Live Preview (right, fluid)     │
+│  Sticky StepShell     │  iframe → /portfolio/preview     │
+│  with 12 sections     │                                  │
+│  collapsible accordion│                                  │
+│                      │                                  │
+└──────────────────────┴──────────────────────────────────┘
+```
+
+- Routes affected: `(dashboard)/dashboard/builder/[id]/page.tsx` (new),
+  old `build-resume` becomes a redirect for ~1 minor (deprecation),
+  old `portfolios/[id]/preview` becomes a 302 to `builder/[id]?tab=preview`.
+- State: `useReducer` on the resume payload; URL search params for
+  `?step=`, `?tab=preview` so deep links survive refresh.
+- Save semantics: debounced (800ms) `PATCH /api/v1/resume/{id}` on each
+  field commit, with a header status pill (`Saved · 2s ago`).
+
+#### v1.7.4 — Live preview wiring
+
+- Form changes → debounced PATCH → preview iframe receives a `postMessage`
+  → preview re-renders from cached payload (no extra fetch).
+- Fall back to a 2s polling interval if `postMessage` channel breaks
+  (cross-origin in prod).
+- Skeleton swap during initial render — uses existing `PortfolioCardSkeleton`.
+
+#### v1.7.5 — Mobile
+
+- `<lg`: form and preview become tabbed (`Edit` / `Preview`). Tab state in
+  URL search param so refresh preserves it.
+- Sticky bottom CTA (`Publish` / `Next step`) — matches the rest of the
+  dashboard mobile pattern.
+- Preview tab uses pinch-zoom on the iframe for full-page viewing.
+
+**Dependencies / prerequisites**
+
+- v1.3 token system (used as the substrate for the new palette).
+- v1.4 SettingsNav pattern (informs the layout idiom).
+- No backend changes required for v1.7.0–v1.7.2.
+- v1.7.3 needs `PATCH /api/v1/resume/{id}` to accept partial bodies —
+  endpoint exists, confirm Pydantic schema is `exclude_unset` friendly.
+
+**Expected outcomes**
+
+- Aurora and Clarity both ship; default flips to Clarity for new users,
+  existing users keep their current theme.
+- One canonical builder page instead of two — fewer route changes per
+  edit, shorter onboarding journey.
+- All Lighthouse a11y/perf budgets from v1.5.1 still pass.
+
+**Risks**
+
+- Existing pages re-styled in v1.7.2 may briefly break visual tests
+  (no Chromatic in repo) — mitigate by previewing on Vercel preview
+  deploys before promoting.
+- Combining two routes is a deep-link breaking change for anyone with
+  bookmarks. Mitigation: keep both legacy routes as 302 redirects for
+  at least one minor.
+
+---
 
 ### v2.0 — Enterprise GA
 
