@@ -196,7 +196,15 @@ async def get_portfolio_status(
 async def list_portfolios(
     current_user: CurrentUser,
     db: DB,
+    limit: int = 20,
+    offset: int = 0,
 ) -> PortfolioListResponse:
+    # Offset pagination (v1.2.4). Cap limit so a malicious client can't
+    # request 100k rows and OOM the server. Total is returned so the FE
+    # can render "x of N" without a second roundtrip.
+    limit = max(1, min(limit, 100))
+    offset = max(0, offset)
+
     total_res = await db.execute(
         select(func.count()).select_from(Portfolio).where(Portfolio.user_id == current_user.id)
     )
@@ -206,6 +214,8 @@ async def list_portfolios(
         select(Portfolio)
         .where(Portfolio.user_id == current_user.id)
         .order_by(Portfolio.created_at.desc())
+        .limit(limit)
+        .offset(offset)
     )
     portfolios = rows.scalars().all()
     return PortfolioListResponse(items=[_to_response(p) for p in portfolios], total=total)
