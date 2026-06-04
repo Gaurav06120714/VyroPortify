@@ -42,6 +42,27 @@ const nextConfig: NextConfig = {
     ];
   },
 
+  // v1.7.3 — Unified builder routes. Old build-resume / preview pages
+  // remain reachable for at least one minor so any stale bookmark still
+  // works; they 302 into the new split-pane builder.
+  async redirects() {
+    return [
+      // The 12-step form lives on for now; only the entry point alias
+      // changes. (Remove this redirect once the form moves inline in v1.7.4.)
+      {
+        source: "/dashboard/builder",
+        destination: "/dashboard/builder/new",
+        permanent: false,
+      },
+      // Old "view preview" route → new unified builder, preview tab.
+      {
+        source: "/dashboard/portfolio/:id/preview",
+        destination: "/dashboard/builder/:id?tab=preview",
+        permanent: false,
+      },
+    ];
+  },
+
   // Source maps in production:
   // - Server-side source maps are SAFE (never sent to the browser).
   // - Browser source maps EXPOSE your source code to anyone opening DevTools.
