@@ -17,6 +17,7 @@ import uuid
 from fastapi import APIRouter, HTTPException, Request, status
 from sqlalchemy import func, select
 
+from app.core.authz import assert_owner
 from app.core.cache import PORTFOLIO_PAGE_TTL, cache
 from app.core.enums import Plan, PortfolioStatus, TemplateID
 from app.core.exceptions import PlanLimitExceeded
@@ -52,15 +53,12 @@ def _slugify(name: str, user_id: uuid.UUID) -> str:
 async def _get_portfolio_or_404(
     portfolio_id: uuid.UUID, user: User, db: DB
 ) -> Portfolio:
+    # Fetch by primary key only; ownership is enforced by assert_owner so the
+    # policy lives in a single audited place (app.core.authz).
     result = await db.execute(
-        select(Portfolio).where(
-            Portfolio.id == portfolio_id, Portfolio.user_id == user.id
-        )
+        select(Portfolio).where(Portfolio.id == portfolio_id)
     )
-    p = result.scalar_one_or_none()
-    if p is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Portfolio not found")
-    return p
+    return assert_owner(result.scalar_one_or_none(), user)
 
 
 def _to_response(p: Portfolio) -> PortfolioResponse:
