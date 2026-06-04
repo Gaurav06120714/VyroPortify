@@ -228,13 +228,27 @@ async def stripe_webhook(
         subscription_id = session.get("subscription")
 
         if user_id:
-            await _upgrade_user(
+            upgraded = await _upgrade_user(
                 db=db,
                 user_id=user_id,
                 customer_id=customer_id,
                 subscription_id=subscription_id,
                 plan=Plan.PRO,
             )
+            # Fire-and-forget welcome-to-Pro email. Best-effort: a Celery
+            # outage must not 5xx the webhook (Stripe would retry and we'd
+            # double-process). We dispatch and log; failures are caught.
+            if upgraded is not None:
+                try:
+                    from app.workers.tasks.send_email import send_email_task
+
+                    send_email_task.delay(
+                        to=upgraded.email,
+                        template_name="plan_changed",
+                        params={"name": upgraded.name or "", "new_plan": "pro"},
+                    )
+                except Exception as exc:  # pragma: no cover - defensive
+                    logger.warning("post_checkout_email_dispatch_failed: %s", exc)
 
     # ── invoice.paid — renew / confirm active subscription ─────────────────────
     elif event_type == "invoice.paid":
@@ -311,11 +325,11 @@ async def _upgrade_user(
     customer_id: str | None,
     subscription_id: str | None,
     plan: str,
-) -> None:
+) -> User | None:
     user = await _get_user_by_id(db, user_id)
     if not user:
         logger.warning("Webhook: user %s not found for upgrade", user_id)
-        return
+        return None
 
     user.plan = plan.value if isinstance(plan, Plan) else plan
     if customer_id:
@@ -324,6 +338,7 @@ async def _upgrade_user(
         user.stripe_subscription_id = subscription_id
 
     logger.info("Upgraded user %s to %s", user_id, plan)
+    return user
 
 
 async def _renew_user(

@@ -79,6 +79,13 @@ class Settings(BaseSettings):
     # Upload limits
     MAX_UPLOAD_SIZE_MB: int = 5
 
+    # ── Transactional email (Resend) ───────────────────────────────────────────
+    # Leave RESEND_API_KEY empty in dev — the email service no-ops silently so
+    # local flows are not blocked. In production, treat empty as a misconfig
+    # (logged but non-fatal so a Resend outage doesn't break paid checkouts).
+    RESEND_API_KEY: str = ""
+    RESEND_FROM_EMAIL: str = "VyroPortify <noreply@vyroportify.com>"
+
     @property
     def storage_bucket(self) -> str:
         """Active bucket name — R2 takes precedence when provider is r2."""
