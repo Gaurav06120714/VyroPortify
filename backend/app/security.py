@@ -159,6 +159,26 @@ async def get_current_user(
         await db.flush()
         logger.info("Auto-created user clerk_id=%s", clerk_id)  # no email in logs — PII
 
+        # v2.0.5: every new user gets a personal organization on first sight.
+        # Same shape as the backfill migration so the data model invariant
+        # ("every user has at least one membership") holds for both legacy
+        # and new accounts.
+        from app.models.organization import Membership, Organization
+
+        org_name = (name or (email.split("@")[0] if email else "Workspace")) + "'s Workspace"
+        org = Organization(
+            name=org_name,
+            slug=f"personal-{str(user.id)[:8]}",
+            is_personal=True,
+            plan=user.plan,
+            stripe_customer_id=user.stripe_customer_id,
+        )
+        db.add(org)
+        await db.flush()
+        db.add(Membership(organization_id=org.id, user_id=user.id, role="owner"))
+        await db.flush()
+        logger.info("Auto-created personal_org user=%s org=%s", user.id, org.id)
+
     return user
 
 
