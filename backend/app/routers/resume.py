@@ -21,9 +21,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, UploadFil
 from pydantic import BaseModel
 from sqlalchemy import func, select
 
-from app.core.authz import assert_owner
+from app.core.authz import assert_owner, require_plan
 from app.core.config import settings
-from app.core.enums import ResumeStatus
+from app.core.enums import Plan, ResumeStatus
 from app.core.limiter import limiter
 from app.core.rate_limit import RateLimitCheck
 from app.database import DB
@@ -162,7 +162,8 @@ async def build_resume(
     "/suggest-skills",
     response_model=SuggestSkillsResponse,
     status_code=status.HTTP_200_OK,
-    summary="Get AI skill suggestions based on partial profile",
+    summary="Get AI skill suggestions based on partial profile (Pro only)",
+    dependencies=[Depends(require_plan(Plan.PRO, feature="AI skill suggestions"))],
 )
 @limiter.limit("10/hour")
 async def suggest_skills(
@@ -209,7 +210,8 @@ async def suggest_skills(
     "/cover-letter",
     response_model=CoverLetterResponse,
     status_code=status.HTTP_200_OK,
-    summary="Generate a tailored cover letter using Claude AI",
+    summary="Generate a tailored cover letter using Claude AI (Pro only)",
+    dependencies=[Depends(require_plan(Plan.PRO, feature="AI cover letter"))],
 )
 @limiter.limit("10/hour")
 async def generate_cover_letter(

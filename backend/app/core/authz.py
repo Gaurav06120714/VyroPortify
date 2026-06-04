@@ -14,9 +14,14 @@ response for authorization failures on direct-object references.
 from __future__ import annotations
 
 import uuid
-from typing import Protocol, TypeVar
+from typing import Callable, Protocol, TypeVar
 
-from fastapi import HTTPException, status
+from fastapi import Depends, HTTPException, status
+
+from app.core.enums import Plan
+from app.core.exceptions import PlanLimitExceeded
+from app.models.user import User
+from app.security import CurrentUser
 
 
 class _OwnedResource(Protocol):
@@ -44,3 +49,43 @@ def assert_owner(resource: T | None, user: _Principal) -> T:
             detail="Resource not found",
         )
     return resource
+
+
+# ── Plan gating ────────────────────────────────────────────────────────────────
+
+# Plans are ordered so that a higher plan satisfies any lower-plan requirement.
+_PLAN_RANK: dict[Plan, int] = {
+    Plan.FREE: 0,
+    Plan.PRO: 1,
+    Plan.ENTERPRISE: 2,
+}
+
+
+def require_plan(minimum: Plan, *, feature: str | None = None) -> Callable[[User], User]:
+    """FastAPI dependency that enforces a minimum plan for the current user.
+
+    Usage:
+        @router.post("/cover-letter", dependencies=[Depends(require_plan(Plan.PRO))])
+
+    Raises PlanLimitExceeded (HTTP 403, error_code PLAN_LIMIT_EXCEEDED) when the
+    caller is below the required tier. The global PortifyBaseException handler
+    converts this to a structured JSON response with a correlation id.
+    """
+
+    minimum_rank = _PLAN_RANK[minimum]
+    label = feature or "this feature"
+
+    def _dependency(current_user: CurrentUser) -> User:
+        try:
+            user_plan = Plan(current_user.plan)
+        except ValueError:
+            user_plan = Plan.FREE
+
+        if _PLAN_RANK[user_plan] < minimum_rank:
+            raise PlanLimitExceeded(
+                f"{label} requires the {minimum.value.title()} plan. "
+                f"Upgrade to continue."
+            )
+        return current_user
+
+    return _dependency
