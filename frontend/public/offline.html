@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Offline · VyroPortify</title>
+    <style>
+      :root {
+        --bg: #ffffff;
+        --fg: #0f172a;
+        --muted: #64748b;
+        --accent: #2563eb;
+      }
+      html, body {
+        margin: 0; padding: 0;
+        background: var(--bg);
+        color: var(--fg);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif;
+        min-height: 100dvh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      main { max-width: 420px; padding: 2rem; text-align: center; }
+      h1 { font-size: 1.75rem; font-weight: 700; margin: 0 0 0.5rem; letter-spacing: -0.02em; }
+      p { color: var(--muted); line-height: 1.6; margin: 0 0 1.5rem; }
+      button {
+        background: var(--accent);
+        color: #fff;
+        border: none;
+        padding: 0.6rem 1.25rem;
+        font-weight: 600;
+        border-radius: 0.75rem;
+        cursor: pointer;
+        font-size: 0.875rem;
+      }
+      .dot {
+        display: inline-block;
+        width: 0.5rem; height: 0.5rem;
+        background: #f59e0b;
+        border-radius: 50%;
+        margin-right: 0.5rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p style="color: var(--muted); font-size: 0.75rem;"><span class="dot"></span>OFFLINE</p>
+      <h1>You're offline</h1>
+      <p>VyroPortify needs an internet connection to generate, save, and preview portfolios. Once you're back online, this page will reload automatically.</p>
+      <button onclick="location.reload()">Try again</button>
+    </main>
+    <script>
+      // Auto-reload when the browser reports it's back online.
+      window.addEventListener("online", () => location.reload());
+    </script>
+  </body>
+</html>

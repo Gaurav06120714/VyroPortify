@@ -5,6 +5,7 @@ import { useUser } from "@clerk/nextjs";
 import { Toaster } from "sonner";
 import { CommandPalette } from "@/components/CommandPalette";
 import { KeyboardShortcutsSheet } from "@/components/KeyboardShortcutsSheet";
+import { PwaInstallPrompt } from "@/components/PwaInstallPrompt";
 import { initPostHog, identifyUser, resetPostHog } from "@/lib/posthog";
 import { initSentry, setUser, clearUser } from "@/lib/sentry";
 
@@ -47,6 +48,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       />
       <CommandPalette />
       <KeyboardShortcutsSheet />
+      <PwaInstallPrompt />
     </>
   );
 }
