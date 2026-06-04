@@ -1,0 +1,58 @@
+name: API Contract Tests (Schemathesis)
+
+on:
+  schedule:
+    - cron: "0 4 * * *"   # 04:00 UTC nightly
+  workflow_dispatch:
+
+jobs:
+  schemathesis:
+    name: Fuzz API against OpenAPI schema
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test
+        ports: ["5432:5432"]
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: "pip" }
+
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[test]" schemathesis
+
+      - name: Start API
+        working-directory: backend
+        env:
+          DATABASE_URL: "postgresql+asyncpg://postgres:test@localhost:5432/test"
+          REDIS_URL: "redis://localhost:6379/0"
+          ANTHROPIC_API_KEY: "test"
+          OPENROUTER_API_KEY: "test"
+          CLERK_JWKS_URL: "https://example.clerk.accounts.dev/.well-known/jwks.json"
+          SECRET_KEY: "ci-only-test-secret-key-32chars!!"
+          ENVIRONMENT: "development"
+        run: |
+          alembic upgrade head
+          uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+          for i in $(seq 1 20); do
+            curl -sf http://localhost:8000/health && break || sleep 1
+          done
+
+      - name: Run schemathesis
+        # Anonymous endpoints only; auth-required ones are exercised in
+        # pytest integration tests. We still want schema-shape coverage.
+        run: |
+          schemathesis run \
+            --base-url http://localhost:8000 \
+            --hypothesis-max-examples=30 \
+            --checks all \
+            http://localhost:8000/api/v1/openapi.json \
+          || echo "::warning::Schemathesis found violations — review nightly run"

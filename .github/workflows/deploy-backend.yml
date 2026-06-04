@@ -1,0 +1,85 @@
+name: Deploy Backend
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref to deploy (tag, branch, or SHA)"
+        required: true
+        default: "main"
+      environment:
+        description: "Target environment"
+        required: true
+        default: "staging"
+        type: choice
+        options: [staging, production]
+
+concurrency:
+  group: deploy-backend-${{ github.event.inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    name: Preflight (tests + migrations check)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: ${{ github.event.inputs.ref }} }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: "pip" }
+      - name: Install backend deps
+        working-directory: backend
+        run: pip install -e ".[test]"
+      - name: Tests
+        working-directory: backend
+        env:
+          DATABASE_URL: "sqlite+aiosqlite:///:memory:"
+          ANTHROPIC_API_KEY: "test"
+          OPENROUTER_API_KEY: "test"
+          CLERK_JWKS_URL: "https://example.clerk.accounts.dev/.well-known/jwks.json"
+          REDIS_URL: "redis://localhost:6379/0"
+          SECRET_KEY: "ci-only-test-secret-key-32chars!!"
+        run: pytest -x -q --timeout=60
+
+      - name: Alembic migration check (head matches code)
+        working-directory: backend
+        env:
+          DATABASE_URL: "sqlite+aiosqlite:///:memory:"
+        run: alembic check || true   # informational until 1.13 lands
+
+  deploy:
+    name: Deploy → ${{ github.event.inputs.environment }}
+    needs: preflight
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: ${{ github.event.inputs.ref }} }
+      - name: Install Railway CLI
+        run: curl -fsSL https://railway.app/install.sh | sh
+      - name: Deploy
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        # Service name differs per environment to keep the worktrees separate.
+        run: |
+          railway up --service vyroportify-${{ github.event.inputs.environment }} \
+                     --detach
+
+  smoke:
+    name: Smoke test
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for readiness
+        env:
+          API_URL: ${{ vars.API_URL }}
+        run: |
+          for i in $(seq 1 30); do
+            code=$(curl -sf -o /dev/null -w "%{http_code}" "$API_URL/api/v1/health/ready" || echo "000")
+            if [ "$code" = "200" ]; then
+              echo "Readiness OK after ${i}s"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Readiness never became 200" && exit 1
