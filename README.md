@@ -686,8 +686,76 @@ consistent output across all users.
 - Worker image bloat. Mitigation: multi-stage build, font cache as a
   read-only Railway volume.
 
-### v3.0 — Platform
+### v3.0 — Platform + Stability Backlog
+
+v3.0 splits into **two parallel tracks**: the original Platform work
+(public API, SSO, white-label) and a Stability Backlog that absorbs
+the bug-hunt findings + UX asks. Stability tickets ship first; the
+Platform tier ramps up once the foundation is clean.
+
+#### Track A — Stability Backlog (ship first, ordered by user impact)
+
+| # | ID | Severity | Area | Title |
+|---|---|---|---|---|
+| 1 | UX-01 | High | Frontend | Remove the violet underline beneath "a portfolio that gets you hired" (Hero) |
+| 2 | UX-02 | High | Frontend | "Three themes" section heading is invisible (low contrast) |
+| 3 | UX-03 | High | Frontend | Resume builder is stuck at the Projects step (~50%) — cannot advance |
+| 4 | UX-04 | High | Frontend | "Build portfolio" CTA does not produce a website |
+| 5 | AI-01 | High | Backend | Replace Claude/Anthropic with a free, no-card-required AI provider (e.g. OpenRouter free models, Groq free tier, Together free tier) |
+| 6 | B5 | Critical | Frontend | Builder live-preview iframe always 404s — points at `/portfolio/p/<UUID>` instead of `/portfolio/p/<slug>` |
+| 7 | B1 | Critical | DB | Backfill migration 0007 produces wrong memberships — CTE joins on `stripe_customer_id` which is NULL for all free users; rewrite to carry `user_id` through |
+| 8 | B10 | Critical | Backend | Stripe webhook only updates `User.plan`; must also flip `Organization.plan` / `stripe_subscription_id` so org members lose Pro on cancellation |
+| 9 | B2 | Critical | Backend | `require_role` opens a second DB session via `async for db in get_db()` — should accept the request session as a dependency |
+| 10 | UX-05 | Medium | Frontend | UI/UX color polish — improve overall palette contrast + accent richness across landing, dashboard, builder |
+| 11 | B18 | High | Backend | LaTeX bullet separator in skills list gets clobbered — Jinja `finalize=latex_escape` re-escapes the join separator's backslashes |
+| 12 | B6 | High | Frontend | `OnboardingChecklist` mutates `localStorage` during render — move to `useEffect`, also call `setDismissed(true)` so it self-dismisses |
+| 13 | B9 | High | Backend | ReportLab `Paragraph(f"<b>{name}</b>", ...)` interprets `<`, `>`, `&` in user input as XML — escape every f-string argument |
+| 14 | B8 | High | Frontend | `usePreviewBridge` returns `ready` from a ref → never re-renders consumers; promote to React state |
+| 15 | B12/B22 | High | Backend+Frontend | Audit-log page shows random org's logs across refreshes — `list_organizations` returns unordered; frontend picks `orgs[0]` blindly |
+| 16 | B11 | High | Backend | Marketplace submit has a TOCTOU window on duplicate template id — catch `IntegrityError` and return 409 instead of letting it 500 |
+| 17 | B4 | Medium | Backend | Org members can't see org-owned resources — `_get_portfolio_or_404` / `_get_resume_or_404` still gate purely on `user_id`. Org-aware ownership policy needed for v2.0's RBAC to actually work |
+| 18 | B17 | Medium | Frontend | Service worker `caches.match(SHELL_URL)` resolves to `undefined` when install missed; `respondWith(undefined)` becomes a network error — fall back to a hardcoded `Response` |
+| 19 | B3 | Medium | Backend | `remove_member` has a dead `owner_count` variable + a redundant second query — collapse to a single `func.count()` scalar |
+| 20 | B13/B21 | Medium | Backend | Marketplace `submit_template` overloads `is_pro = price_cents > 0`. Separate concepts: "requires Pro plan" vs "paid template" |
+| 21 | B7 | Medium | Frontend | `ThemeContext.test.tsx` still tests `setMode("dark")` which is now a no-op — delete or rewrite the tests |
+| 22 | B23 | Medium | Frontend | `useDebouncedSave` cleanup fires on every flush change, not just unmount — split the effect into save-on-unmount-only |
+| 23 | B14 | Medium | Backend | `record_audit_safe` doesn't commit — caller must commit. Wrapper name is misleading |
+| 24 | B16 | Medium | Backend | Public viewer `p.views += 1` race-conditions on concurrent reads — switch to `UPDATE … SET views = views + 1` atomic |
+| 25 | B19 | Low | Frontend | Hero CTA `bg-[var(--pf-cta-warm, var(--pf-accent))]` fallback never fires under Aurora palette — Aurora users get unstyled bg |
+| 26 | B20 | Low | Backend+Frontend | Marketplace `rating_average` serialized as Decimal/string by Pydantic v2 — normalize to number server-side |
+| 27 | B24 | Low | Frontend | Repetitive `@fastify/otel` import-in-the-middle warnings flood the dev-server log on every compile |
+| 28 | B25 | Low | Backend | Defensive `getattr(current_user, "stripe_account_id", None)` is misleading after migration 0011 |
+| 29 | B26 | Low | Backend | LaTeX template uses `{% if links.linkedin %}` under `StrictUndefined` — passing an empty dict raises on missing key access |
+| 30 | B27 | Low | Frontend | i18n quote-mark consistency — en.json uses straight apostrophes, Spanish curly, Hindi none |
+
+Suggested batching for execution:
+
+  **Sprint 3.0.S1 — User-blocking fixes** (1, 2, 3, 4, 5, 6)
+  **Sprint 3.0.S2 — Data integrity** (7, 8, 9, 15, 17)
+  **Sprint 3.0.S3 — Render correctness** (11, 13, 24, 16, 29)
+  **Sprint 3.0.S4 — UI/UX polish** (10, 12, 14, 22, 25)
+  **Sprint 3.0.S5 — Cleanup** (18, 19, 20, 21, 23, 26, 27, 28, 30)
+
+#### Track B — Platform tier (after Stability passes)
+
 v3.0.0 public REST API + keys · v3.0.1 outbound webhooks · v3.0.2 OAuth2 third-party apps · v3.0.3 white-label · v3.0.4 SOC 2 controls · v3.0.5 SSO/SAML
+
+#### AI provider research note (for AI-01)
+
+Candidate free-tier providers that don't require a credit card:
+
+| Provider | Free quota | Notes |
+|---|---|---|
+| **OpenRouter (free models)** | Generous; rotates models | Already integrated as fallback in v1.2.2. Promote to primary. |
+| **Groq Cloud** | ~30 req/min on Llama-3.3-70B | No card; fastest tokens/sec on the market. |
+| **Google AI Studio (Gemini Flash)** | 15 RPM / 1M tokens/day | No card for Studio tier. Quality decent, latency low. |
+| **Together AI** | Free tier with rate limits | Llama-3.x models. |
+| **Cerebras Cloud** | Free tier | Very fast Llama. |
+
+Recommended migration: drop Anthropic from the failover chain when
+no `ANTHROPIC_API_KEY` is set; promote OpenRouter free model to
+primary, add Groq as the new fallback. Zero card requirement,
+unchanged response shape (OpenAI-compatible).
 
 ---
 
