@@ -80,11 +80,36 @@ async def create_checkout(current_user: CurrentUser, db: DB, request: Request) -
         current_user.stripe_customer_id = cid
         await db.flush()
 
+    # v2.0.4 — per-seat checkout. Resolve the caller's primary org and
+    # pass seat count = active membership count. For personal orgs that's
+    # always 1, so the checkout behaves exactly like v1; for team orgs
+    # we bill seats * unit price.
+    from sqlalchemy import func as sql_func
+
+    from app.models.organization import Membership
+
+    org_id: str | None = None
+    seats = 1
+    member_row = await db.execute(
+        select(Membership).where(Membership.user_id == current_user.id).limit(1)
+    )
+    membership = member_row.scalar_one_or_none()
+    if membership is not None:
+        org_id = str(membership.organization_id)
+        seat_count = await db.scalar(
+            select(sql_func.count(Membership.id)).where(
+                Membership.organization_id == membership.organization_id
+            )
+        )
+        seats = int(seat_count or 1)
+
     session = await anyio.to_thread.run_sync(
         lambda: stripe_service.create_checkout_session(
             user_id=str(current_user.id),
             user_email=current_user.email,
             stripe_customer_id=current_user.stripe_customer_id,
+            organization_id=org_id,
+            seats=seats,
         )
     )
 
