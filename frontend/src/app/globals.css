@@ -1,5 +1,24 @@
 @import "tailwindcss";
 
+/* Light-mode-only build (Jun 2026).
+ *
+ * Tailwind v4 defaults the `dark:` variant to @media (prefers-color-scheme: dark),
+ * so on a macOS device in dark mode every dark:bg-* / dark:text-* utility
+ * fires automatically — that's why the marketing pages still rendered
+ * dark even after we removed the .dark class from <html>.
+ *
+ * Re-binding the dark variant to a class that is NEVER present
+ * disables OS-driven dark mode entirely. The .__never__ class is a
+ * sentinel; nothing in the codebase applies it. */
+@custom-variant dark (&:is(.__never__));
+
+/* Belt-and-braces: also force color-scheme so native form controls,
+ * scrollbars, and the browser chrome use light variants regardless of
+ * OS preference. */
+:root, html, body {
+  color-scheme: light;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
