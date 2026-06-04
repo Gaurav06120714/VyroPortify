@@ -202,6 +202,22 @@ async def invite_member(
         organization_id=org_id, user_id=invitee.id, role=body.role
     )
     db.add(m)
+    await db.flush()
+
+    # User-visible audit trail (v2.0.2). Wrapped via record_audit_safe so a
+    # logging row failure can never block the invite itself.
+    from app.services.audit import record_audit_safe
+
+    await record_audit_safe(
+        db,
+        organization_id=org_id,
+        actor_user_id=current_user.id,
+        action="membership.invite",
+        target_type="user",
+        target_id=str(invitee.id),
+        meta={"role": body.role},
+    )
+
     await db.commit()
     await db.refresh(m)
     logger.info(
@@ -235,6 +251,48 @@ async def update_role(
     await db.commit()
     await db.refresh(m)
     return MembershipResponse.model_validate(m)
+
+
+@router.get(
+    "/{org_id}/audit-log",
+    summary="List audit events for the org (admin+)",
+    dependencies=[Depends(require_role("admin"))],
+)
+async def list_audit_log(
+    org_id: uuid.UUID,
+    db: DB,
+    limit: int = 50,
+    offset: int = 0,
+    action: str | None = None,
+) -> dict:
+    # v2.0.2 — paginated, optionally filtered by action prefix.
+    from app.models.audit_event import AuditEvent
+
+    limit = max(1, min(limit, 200))
+    offset = max(0, offset)
+
+    q = select(AuditEvent).where(AuditEvent.organization_id == org_id)
+    if action:
+        q = q.where(AuditEvent.action.like(f"{action}%"))
+    q = q.order_by(AuditEvent.created_at.desc()).limit(limit).offset(offset)
+
+    rows = (await db.execute(q)).scalars().all()
+    return {
+        "items": [
+            {
+                "id": str(r.id),
+                "action": r.action,
+                "actor_user_id": str(r.actor_user_id) if r.actor_user_id else None,
+                "target_type": r.target_type,
+                "target_id": r.target_id,
+                "meta": r.meta,
+                "created_at": r.created_at.isoformat(),
+            }
+            for r in rows
+        ],
+        "limit": limit,
+        "offset": offset,
+    }
 
 
 @router.delete(

@@ -1,4 +1,5 @@
 from app.models.ai_job import AIJob
+from app.models.audit_event import AuditEvent
 from app.models.organization import Membership, Organization
 from app.models.portfolio import Portfolio
 from app.models.resume import Resume
@@ -13,4 +14,5 @@ __all__ = [
     "Template",
     "Organization",
     "Membership",
+    "AuditEvent",
 ]
