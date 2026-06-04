@@ -4,7 +4,7 @@ from app.models.organization import Membership, Organization
 from app.models.portfolio import Portfolio
 from app.models.portfolio_view import PortfolioView
 from app.models.resume import Resume
-from app.models.template import Template
+from app.models.template import Template, TemplateReview
 from app.models.user import User
 
 __all__ = [
@@ -13,6 +13,7 @@ __all__ = [
     "Portfolio",
     "AIJob",
     "Template",
+    "TemplateReview",
     "Organization",
     "Membership",
     "AuditEvent",

@@ -26,7 +26,15 @@ from app.core.limiter import limiter
 from app.core.security_config import security_settings
 from app.core.sentry import init_sentry
 from app.core.telemetry import init_otel
-from app.routers import auth, billing, organization, portfolio, resume
+from app.routers import (
+    auth,
+    billing,
+    connect,
+    marketplace,
+    organization,
+    portfolio,
+    resume,
+)
 
 # Initialise Sentry before anything else (no-op if SENTRY_DSN is unset)
 init_sentry()
@@ -275,6 +283,8 @@ app.include_router(resume.router,    prefix=settings.API_V1_PREFIX)
 app.include_router(portfolio.router, prefix=settings.API_V1_PREFIX)
 app.include_router(billing.router,      prefix=settings.API_V1_PREFIX)
 app.include_router(organization.router, prefix=settings.API_V1_PREFIX)
+app.include_router(marketplace.router,  prefix=settings.API_V1_PREFIX)
+app.include_router(connect.router,      prefix=settings.API_V1_PREFIX)
 
 
 # ── Health checks ──────────────────────────────────────────────────────────────

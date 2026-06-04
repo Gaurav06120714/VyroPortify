@@ -40,6 +40,11 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     stripe_subscription_id: Mapped[str | None] = mapped_column(
         String(255), unique=True, nullable=True, index=True
     )
+    # v2.1.1 — Stripe Connect Express account for template authors.
+    # NULL means the user hasn't onboarded as a seller yet.
+    stripe_account_id: Mapped[str | None] = mapped_column(
+        String(255), unique=True, nullable=True, index=True
+    )
     plan_expires_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
