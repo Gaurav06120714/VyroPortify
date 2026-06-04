@@ -21,6 +21,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, UploadFil
 from pydantic import BaseModel
 from sqlalchemy import func, select
 
+from app.core.authz import assert_owner
 from app.core.config import settings
 from app.core.enums import ResumeStatus
 from app.core.limiter import limiter
@@ -254,17 +255,13 @@ async def generate_cover_letter(
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
 async def _get_resume_or_404(resume_id: uuid.UUID, user: User, db: DB) -> Resume:
-    """Fetch a resume that belongs to the current user, or raise 404."""
-    result = await db.execute(
-        select(Resume).where(Resume.id == resume_id, Resume.user_id == user.id)
-    )
-    resume = result.scalar_one_or_none()
-    if resume is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Resume not found",
-        )
-    return resume
+    """Fetch a resume owned by *user*, or raise 404.
+
+    Ownership is enforced via app.core.authz.assert_owner so the policy lives
+    in a single audited place.
+    """
+    result = await db.execute(select(Resume).where(Resume.id == resume_id))
+    return assert_owner(result.scalar_one_or_none(), user)
 
 
 def _to_response(resume: Resume, presigned_url: str | None = None) -> ResumeResponse:
