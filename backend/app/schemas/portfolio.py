@@ -48,3 +48,21 @@ class GeneratePortfolioResponse(BaseModel):
     portfolio_id: uuid.UUID
     job_queued: bool
     message: str
+
+
+# ── Custom domain (Pro) ────────────────────────────────────────────────────────
+
+
+class CustomDomainRequest(BaseModel):
+    # Stored normalized (lowercase, no scheme). Validation happens server-side
+    # so we accept slightly sloppy input (e.g. "https://Alex.dev/") here.
+    domain: str = Field(min_length=3, max_length=253)
+
+
+class CustomDomainResponse(BaseModel):
+    portfolio_id: uuid.UUID
+    domain: str | None
+    verified: bool
+    cname_target: str | None
+    expected_target: str
+    detail: str

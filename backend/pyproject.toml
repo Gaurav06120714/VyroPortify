@@ -43,6 +43,8 @@ dependencies = [
     "redis>=5.0.0",
     # image processing
     "pillow>=10.0.0",
+    # custom-domain CNAME verification (v1.2.1)
+    "dnspython>=2.6.0",
 ]
 
 [project.optional-dependencies]

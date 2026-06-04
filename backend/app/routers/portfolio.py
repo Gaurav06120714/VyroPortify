@@ -14,10 +14,11 @@ import logging
 import re
 import uuid
 
-from fastapi import APIRouter, HTTPException, Request, status
+import anyio
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import func, select
 
-from app.core.authz import assert_owner
+from app.core.authz import assert_owner, require_plan
 from app.core.cache import PORTFOLIO_PAGE_TTL, cache
 from app.core.enums import Plan, PortfolioStatus, TemplateID
 from app.core.exceptions import PlanLimitExceeded
@@ -27,6 +28,8 @@ from app.models.portfolio import Portfolio
 from app.models.resume import Resume
 from app.models.user import User
 from app.schemas.portfolio import (
+    CustomDomainRequest,
+    CustomDomainResponse,
     GeneratePortfolioRequest,
     GeneratePortfolioResponse,
     PortfolioListResponse,
@@ -34,6 +37,7 @@ from app.schemas.portfolio import (
     PortfolioStatusResponse,
 )
 from app.security import CurrentUser
+from app.services import domain_verification
 
 logger = logging.getLogger(__name__)
 
@@ -309,3 +313,116 @@ async def delete_portfolio(
         await cache.delete(f"portfolio:public:{p.slug}")
     await db.delete(p)
     logger.info("Portfolio deleted id=%s user=%s", portfolio_id, current_user.id)
+
+
+# ── Custom domain (Pro) ────────────────────────────────────────────────────────
+# Three endpoints back the custom-domain feature:
+#   PUT    /{id}/custom-domain   attach a domain (validate + store, Pro-only)
+#   GET    /{id}/custom-domain   poll DNS verification status
+#   DELETE /{id}/custom-domain   detach
+#
+# We don't persist a `verified` flag yet. CNAME state can change at any time,
+# so the source of truth is always a live DNS lookup. The endpoint is cheap
+# (one CNAME query, sub-50ms) and frontends will poll it during setup only.
+
+
+def _domain_response(p: Portfolio, result: domain_verification.VerificationResult | None) -> CustomDomainResponse:
+    if result is None:
+        return CustomDomainResponse(
+            portfolio_id=p.id,
+            domain=None,
+            verified=False,
+            cname_target=None,
+            expected_target=domain_verification.CUSTOM_DOMAIN_TARGET,
+            detail="No custom domain attached",
+        )
+    return CustomDomainResponse(
+        portfolio_id=p.id,
+        domain=result.domain,
+        verified=result.verified,
+        cname_target=result.cname_target,
+        expected_target=result.expected_target,
+        detail=result.detail,
+    )
+
+
+@router.put(
+    "/{portfolio_id}/custom-domain",
+    response_model=CustomDomainResponse,
+    summary="Attach a custom domain to a portfolio (Pro only)",
+    dependencies=[Depends(require_plan(Plan.PRO, feature="Custom domain"))],
+)
+async def attach_custom_domain(
+    portfolio_id: uuid.UUID,
+    body: CustomDomainRequest,
+    current_user: CurrentUser,
+    db: DB,
+) -> CustomDomainResponse:
+    p = await _get_portfolio_or_404(portfolio_id, current_user, db)
+
+    try:
+        domain = domain_verification.normalize_domain(body.domain)
+    except domain_verification.DomainValidationError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    # Uniqueness check: the case-insensitive partial unique index in the DB is
+    # the source of truth, but a pre-check gives a clean 409 instead of a
+    # generic 500 on IntegrityError.
+    existing = await db.execute(
+        select(Portfolio).where(
+            func.lower(Portfolio.custom_domain) == domain,
+            Portfolio.id != portfolio_id,
+        )
+    )
+    if existing.scalar_one_or_none() is not None:
+        raise HTTPException(status_code=409, detail="Domain already in use")
+
+    p.custom_domain = domain
+    await db.commit()
+    await cache.delete(f"portfolio:public:{p.slug}")
+
+    # Run DNS lookup off the event loop — dnspython is blocking.
+    result = await anyio.to_thread.run_sync(domain_verification.verify_cname, domain)
+    logger.info(
+        "custom_domain_attached portfolio=%s domain=%s verified=%s",
+        portfolio_id, domain, result.verified,
+    )
+    return _domain_response(p, result)
+
+
+@router.get(
+    "/{portfolio_id}/custom-domain",
+    response_model=CustomDomainResponse,
+    summary="Get custom-domain status (live CNAME check)",
+)
+async def get_custom_domain(
+    portfolio_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DB,
+) -> CustomDomainResponse:
+    p = await _get_portfolio_or_404(portfolio_id, current_user, db)
+    if not p.custom_domain:
+        return _domain_response(p, None)
+
+    result = await anyio.to_thread.run_sync(
+        domain_verification.verify_cname, p.custom_domain
+    )
+    return _domain_response(p, result)
+
+
+@router.delete(
+    "/{portfolio_id}/custom-domain",
+    response_model=CustomDomainResponse,
+    summary="Detach the custom domain from a portfolio",
+)
+async def detach_custom_domain(
+    portfolio_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DB,
+) -> CustomDomainResponse:
+    p = await _get_portfolio_or_404(portfolio_id, current_user, db)
+    p.custom_domain = None
+    await db.commit()
+    await cache.delete(f"portfolio:public:{p.slug}")
+    logger.info("custom_domain_detached portfolio=%s user=%s", portfolio_id, current_user.id)
+    return _domain_response(p, None)
