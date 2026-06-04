@@ -25,6 +25,7 @@ from app.core.exceptions import PortifyBaseException
 from app.core.limiter import limiter
 from app.core.security_config import security_settings
 from app.core.sentry import init_sentry
+from app.core.telemetry import init_otel
 from app.routers import auth, billing, portfolio, resume
 
 # Initialise Sentry before anything else (no-op if SENTRY_DSN is unset)
@@ -48,6 +49,10 @@ app = FastAPI(
     redoc_url=f"{settings.API_V1_PREFIX}/redoc" if not settings.is_production else None,
     openapi_url=f"{settings.API_V1_PREFIX}/openapi.json" if not settings.is_production else None,
 )
+
+# Bootstrap OpenTelemetry traces (no-op when OTEL_EXPORTER_OTLP_ENDPOINT
+# isn't set or the OTel packages aren't installed).
+init_otel(app)
 
 # ── Rate limiting ──────────────────────────────────────────────────────────────
 

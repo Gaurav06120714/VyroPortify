@@ -253,7 +253,8 @@ async def portfolio_sitemap(db: DB) -> list[dict]:
     response_model=PortfolioResponse,
     summary="Get a public portfolio by slug (no auth required)",
 )
-async def get_public_portfolio(slug: str, db: DB) -> PortfolioResponse:
+@limiter.limit("120/minute")
+async def get_public_portfolio(request: Request, slug: str, db: DB) -> PortfolioResponse:
     cache_key = f"portfolio:public:{slug}"
 
     # Try cache first
