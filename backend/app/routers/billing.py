@@ -165,6 +165,19 @@ async def stripe_webhook(
     if not settings.STRIPE_WEBHOOK_SECRET:
         raise HTTPException(status_code=503, detail="Webhook secret not configured")
 
+    # Fail fast on missing signature header — gives a clearer 400 than letting
+    # the Stripe SDK raise SignatureVerificationError on an empty string, and
+    # surfaces an audit event so unsigned probes are visible in security logs.
+    if not stripe_signature:
+        from app.core.audit_log import log_security_event
+
+        log_security_event(
+            "webhook_missing_signature",
+            user_id=None,
+            detail={"remote": request.client.host if request.client else None},
+        )
+        raise HTTPException(status_code=400, detail="Missing stripe-signature header")
+
     payload = await request.body()
 
     try:

@@ -235,6 +235,25 @@ class TestStripeWebhook:
         assert response.status_code == 400
 
     @patch("app.routers.billing.settings")
+    async def test_stripe_webhook_missing_signature_returns_400(
+        self,
+        mock_settings,
+        client: AsyncClient,
+    ):
+        """Webhook without a stripe-signature header must be rejected fast."""
+        mock_settings.STRIPE_SECRET_KEY = "sk_test_123"
+        mock_settings.STRIPE_WEBHOOK_SECRET = "whsec_test_123"
+
+        response = await client.post(
+            "/api/v1/billing/webhook",
+            content=b"{}",
+            # No stripe-signature header at all.
+        )
+
+        assert response.status_code == 400
+        assert "signature" in response.json().get("detail", "").lower()
+
+    @patch("app.routers.billing.settings")
     async def test_stripe_webhook_not_configured_returns_503(
         self,
         mock_settings,

@@ -20,7 +20,7 @@ version: "3.9"
 
 services:
   postgres:
-    image: postgres:15-alpine
+    image: postgres:16-alpine
     restart: unless-stopped
     environment:
       # Dev-only hardcoded credentials — fine for local containers.
