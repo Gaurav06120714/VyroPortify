@@ -235,7 +235,8 @@ body {
   --pf-ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
   --pf-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* Typography scale */
+  /* Typography scale (v1.7.1 refined). Display sizes tightened to match
+   * Gridlock-style civic-modern look — bold but not shouty. */
   --pf-text-xs:  0.75rem;  --pf-leading-xs:  1rem;
   --pf-text-sm:  0.875rem; --pf-leading-sm:  1.25rem;
   --pf-text-md:  1rem;     --pf-leading-md:  1.5rem;
@@ -243,7 +244,55 @@ body {
   --pf-text-xl:  1.25rem;  --pf-leading-xl:  1.75rem;
   --pf-text-2xl: 1.5rem;   --pf-leading-2xl: 2rem;
   --pf-text-3xl: 1.875rem; --pf-leading-3xl: 2.25rem;
-  --pf-text-display: 2.5rem; --pf-leading-display: 1.1;
+  --pf-text-4xl: 2.25rem;  --pf-leading-4xl: 2.5rem;
+  --pf-text-display: 3rem; --pf-leading-display: 1.05;
+  --pf-text-display-lg: 3.75rem; --pf-leading-display-lg: 1.02;
+
+  /* Letter-spacing scale — used by .text-display-* utilities below. */
+  --pf-tracking-tight:  -0.02em;
+  --pf-tracking-tighter: -0.035em;
+  --pf-tracking-normal: 0;
+  --pf-tracking-wide:   0.02em;
+}
+
+/* ── v1.7.1 typography utilities ────────────────────────────────────────────
+ * Token-driven heading classes. Use these instead of ad-hoc text-3xl/4xl
+ * combos so display rhythm is consistent across pages. */
+.text-display-lg {
+  font-size: var(--pf-text-display-lg);
+  line-height: var(--pf-leading-display-lg);
+  letter-spacing: var(--pf-tracking-tighter);
+  font-weight: 700;
+}
+.text-display {
+  font-size: var(--pf-text-display);
+  line-height: var(--pf-leading-display);
+  letter-spacing: var(--pf-tracking-tight);
+  font-weight: 700;
+}
+.text-h1 {
+  font-size: var(--pf-text-4xl);
+  line-height: var(--pf-leading-4xl);
+  letter-spacing: var(--pf-tracking-tight);
+  font-weight: 700;
+}
+.text-h2 {
+  font-size: var(--pf-text-3xl);
+  line-height: var(--pf-leading-3xl);
+  letter-spacing: var(--pf-tracking-tight);
+  font-weight: 600;
+}
+.text-h3 {
+  font-size: var(--pf-text-2xl);
+  line-height: var(--pf-leading-2xl);
+  font-weight: 600;
+}
+
+/* Enable Inter's stylistic alternates ("a" with the curved tail, "g" with
+ * the single-story descender) for a cleaner modern feel. Falls back
+ * silently on browsers without OT-feature support. */
+:root, body {
+  font-feature-settings: "cv11" 1, "ss01" 1, "ss03" 1;
 }
 
 /* Honor prefers-reduced-motion globally. Animations still fire but with a
