@@ -26,6 +26,13 @@ class Resume(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
+    # v2.0.0: nullable until v2.0.5 backfill. See models/portfolio.py.
+    organization_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("organizations.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     # S3/R2 object key — the stable identifier used for presigned URLs and deletion
     s3_key: Mapped[str | None] = mapped_column(Text, nullable=True, unique=True)
     # Public / presigned URL — regenerated on-the-fly, stored only as a cache hint

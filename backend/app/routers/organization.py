@@ -1,0 +1,277 @@
+"""Organization router (v2.0.0).
+
+Endpoints
+---------
+GET    /api/v1/organizations              List orgs the caller belongs to
+POST   /api/v1/organizations              Create a new org (caller becomes owner)
+GET    /api/v1/organizations/{id}         Get one org (membership required)
+GET    /api/v1/organizations/{id}/members List org members
+POST   /api/v1/organizations/{id}/invite  Invite by email (admin+ required)
+PATCH  /api/v1/organizations/{id}/members/{user_id}  Change role (owner only)
+DELETE /api/v1/organizations/{id}/members/{user_id}  Remove member (owner only)
+
+RBAC enforcement lives in app.core.authz.require_role (v2.0.1).
+"""
+
+from __future__ import annotations
+
+import logging
+import re
+import uuid
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
+
+from app.core.authz import require_role
+from app.database import DB
+from app.models.organization import Membership, Organization
+from app.models.user import User
+from app.schemas.organization import (
+    MembershipInvite,
+    MembershipResponse,
+    MembershipRoleUpdate,
+    OrganizationCreate,
+    OrganizationResponse,
+    OrganizationWithRole,
+)
+from app.security import CurrentUser
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/organizations", tags=["Organizations"])
+
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
+def _slugify(name: str) -> str:
+    """Lowercase, hyphenate, strip non-alphanum. Uniqueness is checked at the DB level."""
+    s = name.lower().strip()
+    s = re.sub(r"[^a-z0-9\s-]", "", s)
+    s = re.sub(r"\s+", "-", s)[:80]
+    # Append a short suffix to reduce collision odds without an extra roundtrip.
+    return f"{s}-{uuid.uuid4().hex[:6]}"
+
+
+async def _ensure_member(
+    organization_id: uuid.UUID, user: User, db: DB
+) -> Membership:
+    """Return the caller's membership in the org, or raise 404.
+
+    404 (not 403) because the membership absence and the org absence are
+    indistinguishable from the caller's perspective — same OWASP DOR
+    rationale as core.authz.assert_owner.
+    """
+    result = await db.execute(
+        select(Membership).where(
+            Membership.organization_id == organization_id,
+            Membership.user_id == user.id,
+        )
+    )
+    m = result.scalar_one_or_none()
+    if m is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found"
+        )
+    return m
+
+
+# ── GET / (list) ──────────────────────────────────────────────────────────────
+
+@router.get(
+    "",
+    response_model=list[OrganizationWithRole],
+    summary="List organizations the current user belongs to",
+)
+async def list_organizations(
+    current_user: CurrentUser, db: DB
+) -> list[OrganizationWithRole]:
+    result = await db.execute(
+        select(Membership)
+        .where(Membership.user_id == current_user.id)
+        .options(selectinload(Membership.organization))
+    )
+    rows = result.scalars().all()
+    return [
+        OrganizationWithRole(
+            id=m.organization.id,
+            name=m.organization.name,
+            slug=m.organization.slug,
+            plan=m.organization.plan,
+            is_personal=m.organization.is_personal,
+            role=m.role,
+        )
+        for m in rows
+    ]
+
+
+# ── POST / (create) ───────────────────────────────────────────────────────────
+
+@router.post(
+    "",
+    response_model=OrganizationResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create a new organization (caller becomes owner)",
+)
+async def create_organization(
+    body: OrganizationCreate, current_user: CurrentUser, db: DB
+) -> OrganizationResponse:
+    org = Organization(
+        name=body.name,
+        slug=body.slug or _slugify(body.name),
+        is_personal=False,
+    )
+    db.add(org)
+    await db.flush()  # need org.id for the Membership row
+
+    db.add(Membership(organization_id=org.id, user_id=current_user.id, role="owner"))
+    await db.commit()
+    await db.refresh(org)
+    logger.info("organization_created id=%s user=%s", org.id, current_user.id)
+    return OrganizationResponse.model_validate(org)
+
+
+# ── GET /{id} ─────────────────────────────────────────────────────────────────
+
+@router.get(
+    "/{org_id}",
+    response_model=OrganizationResponse,
+    summary="Get one organization (membership required)",
+)
+async def get_organization(
+    org_id: uuid.UUID, current_user: CurrentUser, db: DB
+) -> OrganizationResponse:
+    await _ensure_member(org_id, current_user, db)
+    org = await db.get(Organization, org_id)
+    return OrganizationResponse.model_validate(org)
+
+
+# ── Members ───────────────────────────────────────────────────────────────────
+
+@router.get(
+    "/{org_id}/members",
+    response_model=list[MembershipResponse],
+    summary="List members of an organization",
+)
+async def list_members(
+    org_id: uuid.UUID, current_user: CurrentUser, db: DB
+) -> list[MembershipResponse]:
+    await _ensure_member(org_id, current_user, db)
+    result = await db.execute(
+        select(Membership).where(Membership.organization_id == org_id)
+    )
+    return [MembershipResponse.model_validate(m) for m in result.scalars().all()]
+
+
+@router.post(
+    "/{org_id}/invite",
+    response_model=MembershipResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Invite an existing user to the organization (admin+)",
+    dependencies=[Depends(require_role("admin"))],
+)
+async def invite_member(
+    org_id: uuid.UUID,
+    body: MembershipInvite,
+    current_user: CurrentUser,
+    db: DB,
+) -> MembershipResponse:
+    # MVP: invite-by-email-of-existing-user. Full invite-link flow with a
+    # token + Resend email lands in v2.1.
+    result = await db.execute(select(User).where(User.email == body.email))
+    invitee = result.scalar_one_or_none()
+    if invitee is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No user with that email exists yet — ask them to sign up first.",
+        )
+
+    # Dedupe: refuse re-invite of an existing member.
+    existing = await db.execute(
+        select(Membership).where(
+            Membership.organization_id == org_id,
+            Membership.user_id == invitee.id,
+        )
+    )
+    if existing.scalar_one_or_none() is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="User is already a member"
+        )
+
+    m = Membership(
+        organization_id=org_id, user_id=invitee.id, role=body.role
+    )
+    db.add(m)
+    await db.commit()
+    await db.refresh(m)
+    logger.info(
+        "membership_created org=%s user=%s role=%s invited_by=%s",
+        org_id, invitee.id, body.role, current_user.id,
+    )
+    return MembershipResponse.model_validate(m)
+
+
+@router.patch(
+    "/{org_id}/members/{user_id}",
+    response_model=MembershipResponse,
+    summary="Change a member's role (owner only)",
+    dependencies=[Depends(require_role("owner"))],
+)
+async def update_role(
+    org_id: uuid.UUID,
+    user_id: uuid.UUID,
+    body: MembershipRoleUpdate,
+    db: DB,
+) -> MembershipResponse:
+    result = await db.execute(
+        select(Membership).where(
+            Membership.organization_id == org_id, Membership.user_id == user_id
+        )
+    )
+    m = result.scalar_one_or_none()
+    if m is None:
+        raise HTTPException(status_code=404, detail="Membership not found")
+    m.role = body.role
+    await db.commit()
+    await db.refresh(m)
+    return MembershipResponse.model_validate(m)
+
+
+@router.delete(
+    "/{org_id}/members/{user_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Remove a member (owner only)",
+    dependencies=[Depends(require_role("owner"))],
+)
+async def remove_member(
+    org_id: uuid.UUID, user_id: uuid.UUID, db: DB
+) -> None:
+    result = await db.execute(
+        select(Membership).where(
+            Membership.organization_id == org_id, Membership.user_id == user_id
+        )
+    )
+    m = result.scalar_one_or_none()
+    if m is None:
+        raise HTTPException(status_code=404, detail="Membership not found")
+    # Prevent removing the last owner — locks the user out of their own org.
+    if m.role == "owner":
+        owner_count = await db.scalar(
+            select(Membership)
+            .where(Membership.organization_id == org_id, Membership.role == "owner")
+            .with_only_columns(Membership.id)
+        )
+        # Lightweight count using scalar — full count if multiple owners.
+        all_owners = await db.execute(
+            select(Membership).where(
+                Membership.organization_id == org_id, Membership.role == "owner"
+            )
+        )
+        if len(all_owners.scalars().all()) <= 1:
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot remove the last owner — promote another member first.",
+            )
+        del owner_count  # silence unused-name linter
+    await db.delete(m)
+    await db.commit()

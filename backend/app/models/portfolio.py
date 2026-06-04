@@ -31,6 +31,14 @@ class Portfolio(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
+    # v2.0.0: nullable until the v2.0.5 backfill runs. core.authz still
+    # gates on user_id; org-scoped access is layered on top in v2.0.1.
+    organization_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("organizations.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     resume_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("resumes.id", ondelete="SET NULL"), nullable=True
     )
