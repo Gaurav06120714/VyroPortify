@@ -394,6 +394,7 @@ A milestone-driven plan. Every sub-version ends with a **Review Gate → Commit 
 | **v2.0** | Enterprise GA — team workspaces, RBAC, audit-log UI, analytics, billing v2 | 6–8 wk |
 | **v2.1** | Template marketplace (community + paid via Stripe Connect) | 4 wk |
 | **v2.2** | i18n + PWA + mobile polish | 3 wk |
+| **v2.3** | PDF Resume Export — ATS-friendly LaTeX resume.pdf | 3–4 wk |
 | **v3.0** | Platform — public API, webhooks, OAuth apps, white-label, SOC 2, SSO/SAML | 8–10 wk |
 
 ### v1.1 — Foundation & Stability
@@ -472,6 +473,76 @@ v2.1.0 community submission + moderation · v2.1.1 paid templates via Stripe Con
 
 ### v2.2 — i18n + PWA + Mobile
 v2.2.0 `next-intl` (en/es/fr/de/hi/ja) · v2.2.1 PWA manifest + service worker · v2.2.2 mobile gestures + bottom-tab nav
+
+### v2.3 — PDF Resume Export (LaTeX → ATS-friendly resume.pdf)
+
+**Objective**: when a user has filled in their profile (personal details,
+education, skills, projects, experience, certifications, achievements), they
+can click *Download PDF* and receive a clean, modern, ATS-parseable
+`resume.pdf` rendered from a LaTeX template — no manual formatting,
+consistent output across all users.
+
+| Sub | Scope | Effort | Risk |
+|---|---|---|---|
+| v2.3.0 | LaTeX template + Jinja2 binding (Tectonic engine in Docker) | 5 d | Med |
+| v2.3.1 | Backend service + Celery task for async render | 3 d | Med |
+| v2.3.2 | `POST /api/v1/resume/{id}/export-pdf` → returns presigned URL | 2 d | Low |
+| v2.3.3 | Frontend *Download PDF* CTA + loading + Sonner toast | 2 d | Low |
+| v2.3.4 | Three template variants (Modern, Classic, Compact) + per-user pick | 4 d | Low |
+| v2.3.5 | ATS validation pass (Affinda / OpenResume parser smoke test) | 2 d | Med |
+
+**Implementation outline**
+
+- **Engine**: [Tectonic](https://tectonic-typesetting.github.io/) (self-contained
+  LaTeX, no full TeX Live install). Runs inside the Celery worker image; first
+  build downloads fonts/packages into a cached volume.
+- **Template**: single `resume.tex.j2` rendered via Jinja2 (escape-mode `latex`)
+  with strict context: `personal`, `summary`, `experience[]`, `education[]`,
+  `skills[]`, `projects[]`, `certifications[]`, `achievements[]`. All optional
+  blocks suppress empty sections cleanly — no "Experience:" with nothing below.
+- **ATS hygiene rules baked into the template**:
+  - Single-column layout (multi-column kills parsers).
+  - Standard section names (`Experience`, `Education`, `Skills`, `Projects`).
+  - No images, no icons in headings, no text inside graphics.
+  - `\hypersetup{hidelinks}` for clickable but invisible links.
+  - Real text (no `\textsc` ligatures that confuse parsers), `pdfa-1b` output.
+  - Latin Modern / Inter fallback, 10–11pt body, 1.15 line spacing,
+    consistent 0.6in margins, section spacing from token scale.
+- **Pipeline**: `validate(payload) → render(j2 → .tex) → tectonic compile →
+  upload to R2 (key resumes/<user>/<resume_id>.pdf) → store hash + size → return
+  presigned URL (15 min TTL)`. Idempotency via content-hash so re-clicking
+  *Download PDF* on unchanged data is a cache hit, not a recompile.
+- **Validation**: payload runs through a Pydantic model; LaTeX-unsafe chars
+  (`& % $ # _ { } ~ ^ \`) escaped at template-render time; max sizes per
+  field enforced server-side. Templates are read-only artifacts shipped with
+  the image — users never supply LaTeX directly (no command injection).
+- **Pro gating**: free tier limited to 1 export / day; Pro unlimited.
+  Wires through the existing `require_plan(Plan.PRO, feature=…)` dependency
+  with a quota counter rather than a hard block on Free.
+
+**Dependencies / prerequisites**
+
+- v1.2.4 pagination (lists growing).
+- Build artifact: Celery worker Docker image bundles Tectonic + cached font
+  bundle. Adds ~120 MB to the worker image.
+- Migrations: `resume_exports` table (id, resume_id, user_id, content_hash,
+  s3_key, file_size, template_id, created_at).
+
+**Expected outcomes**
+
+- Median render time < 4 s on cold cache, < 200 ms on warm cache.
+- Same source data → byte-identical PDF (deterministic build via fixed
+  Tectonic revision + pinned font bundle).
+- Affinda parser correctly extracts ≥ 90% of fields on the Modern template.
+
+**Risks**
+
+- LaTeX compile failures from edge-case user input (curly quotes inside
+  achievements, RTL characters). Mitigation: aggressive escape + a curated
+  Unicode allowlist, with a fallback "plain renderer" path that produces a
+  no-LaTeX PDF via ReportLab on compile error.
+- Worker image bloat. Mitigation: multi-stage build, font cache as a
+  read-only Railway volume.
 
 ### v3.0 — Platform
 v3.0.0 public REST API + keys · v3.0.1 outbound webhooks · v3.0.2 OAuth2 third-party apps · v3.0.3 white-label · v3.0.4 SOC 2 controls · v3.0.5 SSO/SAML
