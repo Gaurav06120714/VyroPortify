@@ -244,7 +244,8 @@ async def generate_cover_letter(
 
     try:
         from app.services.ai_client import call_ai
-        letter = call_ai(prompt=prompt, max_tokens=1024)
+        # use_cache=False — identical inputs should still produce fresh phrasing.
+        letter = call_ai(prompt=prompt, max_tokens=1024, use_cache=False)
         return CoverLetterResponse(cover_letter=letter)
     except Exception as exc:
         logger.warning("Cover letter generation failed: %s", exc)
