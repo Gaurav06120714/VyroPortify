@@ -1,0 +1,43 @@
+{
+  "common": {
+    "loading": "Cargando…",
+    "error": "Algo salió mal",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "publish": "Publicar",
+    "preview": "Vista previa",
+    "edit": "Editar"
+  },
+  "nav": {
+    "dashboard": "Panel",
+    "portfolios": "Portafolios",
+    "templates": "Plantillas",
+    "marketplace": "Mercado",
+    "settings": "Ajustes",
+    "analytics": "Analítica"
+  },
+  "hero": {
+    "title": "Convierte tu CV en un portafolio que te haga conseguir el trabajo",
+    "subtitle": "Sube tu CV o responde 12 preguntas rápidas. Claude lee tu experiencia, escribe el texto y crea tu portafolio. Todo en unos 60 segundos.",
+    "cta_primary": "Genera tu portafolio gratis",
+    "cta_secondary": "Ver cómo funciona"
+  },
+  "pricing": {
+    "title": "Precios",
+    "subtitle": "Empieza gratis. Mejora si necesitas dominio personalizado o analíticas. Sin tarifas ocultas.",
+    "free": "Gratis",
+    "pro": "Pro",
+    "lifetime": "De por vida",
+    "per_month": "/mes",
+    "one_time": "pago único"
+  },
+  "builder": {
+    "your_information": "Tu información",
+    "auto_saved": "Guardado automáticamente",
+    "see_preview": "Ver vista previa en vivo",
+    "back_to_edit": "Volver a editar",
+    "no_preview_yet": "Aún no hay vista previa",
+    "no_preview_help": "Completa el formulario de la izquierda y publica para ver tu portafolio en este lado de la página."
+  }
+}

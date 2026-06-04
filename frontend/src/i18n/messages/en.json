@@ -1,0 +1,43 @@
+{
+  "common": {
+    "loading": "Loading…",
+    "error": "Something went wrong",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "publish": "Publish",
+    "preview": "Preview",
+    "edit": "Edit"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "portfolios": "Portfolios",
+    "templates": "Templates",
+    "marketplace": "Marketplace",
+    "settings": "Settings",
+    "analytics": "Analytics"
+  },
+  "hero": {
+    "title": "Turn your resume into a portfolio that gets you hired",
+    "subtitle": "Upload your resume or answer 12 quick questions. Claude reads your experience, writes the copy, and builds your portfolio. The whole thing takes about 60 seconds.",
+    "cta_primary": "Generate your portfolio free",
+    "cta_secondary": "See how it works"
+  },
+  "pricing": {
+    "title": "Pricing",
+    "subtitle": "Start free. Upgrade if you need a custom domain or analytics. No hidden fees.",
+    "free": "Free",
+    "pro": "Pro",
+    "lifetime": "Lifetime",
+    "per_month": "/mo",
+    "one_time": "one-time"
+  },
+  "builder": {
+    "your_information": "Your information",
+    "auto_saved": "Auto-saved",
+    "see_preview": "See live preview",
+    "back_to_edit": "Back to edit",
+    "no_preview_yet": "No preview yet",
+    "no_preview_help": "Fill in the form on the left and publish to see your portfolio live on this side of the page."
+  }
+}
