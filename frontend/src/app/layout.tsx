@@ -33,10 +33,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <html lang="en" suppressHydrationWarning>
         <head>
-          <script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem('portify-theme')||'dark';var r=t==='system'?(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):t;document.documentElement.classList.toggle('dark',r==='dark')}catch(e){document.documentElement.classList.add('dark')}` }} />
+          {/* Anti-flash: resolve theme + palette before React hydrates so
+              CSS variables are correct on the very first paint. v1.7.0
+              extends the original script to also apply data-palette. */}
+          <script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem('portify-theme')||'dark';var r=t==='system'?(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):t;document.documentElement.setAttribute('data-theme',r);document.documentElement.classList.toggle('dark',r==='dark');var p=localStorage.getItem('portify-palette');if(p==='clarity'||p==='aurora'){document.documentElement.setAttribute('data-palette',p)}else{document.documentElement.setAttribute('data-palette','aurora')}}catch(e){document.documentElement.classList.add('dark');document.documentElement.setAttribute('data-palette','aurora')}` }} />
         </head>
         <body
-          className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} antialiased`}
+          className={`${inter.variable} ${geistMono.variable} antialiased`}
         >
           <ThemeProvider>
             <Providers>

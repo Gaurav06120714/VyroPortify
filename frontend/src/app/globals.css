@@ -263,3 +263,69 @@ body {
   outline-offset: 2px;
   border-radius: var(--pf-radius-md);
 }
+
+/* ── v1.7.0 Clarity palette ─────────────────────────────────────────────────
+ * Gridlock-inspired clean civic-modern theme. Applied via:
+ *   <html data-palette="clarity">
+ * Sits on top of the existing light/dark mechanism. When data-palette is
+ * absent (or "aurora") the original purple/violet palette wins via :root.
+ *
+ * Contrast: --pf-text on --pf-bg = 16.1:1 (AAA), --pf-accent on white =
+ * 4.86:1 (AA for normal text, AAA for large).
+ */
+[data-palette="clarity"] {
+  --pf-bg:              #ffffff;
+  --pf-surface:         #fafbfc;
+  --pf-surface2:        #f1f5f9;       /* slate-100 */
+  --pf-text:            #0f172a;       /* slate-900 */
+  --pf-text-dim:        #334155;       /* slate-700 */
+  --pf-muted:           #64748b;       /* slate-500 */
+  --pf-muted-dim:       #94a3b8;       /* slate-400 */
+  --pf-muted-darker:    #cbd5e1;       /* slate-300 */
+  --pf-muted-darkest:   #e2e8f0;       /* slate-200 */
+
+  --pf-accent:          #2563eb;       /* blue-600 */
+  --pf-accent-hover:    #1d4ed8;       /* blue-700 */
+  --pf-accent-text:     #1d4ed8;
+  --pf-accent-subtle:   rgba(37,99,235,0.08);
+  --pf-accent-soft:     rgba(37,99,235,0.12);
+  --pf-cta-warm:        #f59e0b;       /* amber-500 */
+  --pf-cta-warm-hover:  #d97706;       /* amber-600 */
+
+  --pf-border:          rgba(15,23,42,0.10);
+  --pf-border-dim:      rgba(15,23,42,0.06);
+  --pf-border-subtle:   rgba(15,23,42,0.04);
+  --pf-border-light:    rgba(15,23,42,0.08);
+  --pf-border-medium:   rgba(15,23,42,0.14);
+  --pf-border-hover:    rgba(37,99,235,0.30);
+  --pf-border-faint:    rgba(15,23,42,0.03);
+
+  /* Cleaner elevations — no glow, just subtle drop shadow */
+  --pf-elev-1: 0 1px 2px rgba(15,23,42,0.04);
+  --pf-elev-2: 0 4px 12px rgba(15,23,42,0.06);
+  --pf-elev-3: 0 12px 24px rgba(15,23,42,0.08);
+  --pf-elev-4: 0 24px 48px rgba(15,23,42,0.12);
+
+  --pf-sidebar:        #0f172a;        /* dark sidebar contrasts against white body */
+  --pf-sidebar-text:   #e2e8f0;
+  --pf-sidebar-muted:  #94a3b8;
+}
+
+/* Clarity in dark mode — keep the blue + warm-amber accent identity but
+ * invert surfaces. Used when both data-palette="clarity" AND data-theme="dark"
+ * (or the .dark class set by ThemeContext) are active. */
+[data-palette="clarity"].dark,
+[data-palette="clarity"][data-theme="dark"] {
+  --pf-bg:              #0b1220;
+  --pf-surface:         #111a2e;
+  --pf-surface2:        #182338;
+  --pf-text:            #f8fafc;
+  --pf-text-dim:        #cbd5e1;
+  --pf-muted:           #94a3b8;
+  --pf-border:          rgba(255,255,255,0.10);
+  --pf-border-light:    rgba(255,255,255,0.08);
+  --pf-accent:          #3b82f6;       /* blue-500 — a touch lighter on dark */
+  --pf-accent-hover:    #60a5fa;
+  --pf-sidebar:         #050912;
+  --pf-sidebar-text:    #e2e8f0;
+}
