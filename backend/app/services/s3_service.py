@@ -199,6 +199,31 @@ class S3StorageService:
         logger.info("Uploaded s3://%s/%s (user=%s)", bucket, key, user_id)
         return key
 
+    async def upload_bytes(
+        self,
+        key: str,
+        data: bytes,
+        content_type: str,
+    ) -> str:
+        """Upload raw bytes to an explicit S3 key (no key derivation).
+
+        Used by v2.3 resume PDF exports where the key encodes the
+        content hash for cache-friendly deduplication.
+        """
+        bucket = settings.storage_bucket
+
+        def _put():
+            return self._get_client().put_object(
+                Bucket=bucket,
+                Key=key,
+                Body=data,
+                ContentType=content_type,
+                ACL="private",
+            )
+
+        await self._run(_put)
+        return key
+
     async def presigned_url(
         self,
         key: str,

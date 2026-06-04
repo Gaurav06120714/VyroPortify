@@ -1,0 +1,119 @@
+% VyroPortify — Modern resume template (v2.3.0)
+%
+% ATS-safe rules baked in:
+%  - single column (multi-column layouts kill LinkedIn / Workday parsers)
+%  - standard section names (Experience, Education, Skills, Projects)
+%  - no images, no icons in headings, no text inside vector graphics
+%  - hyperref hidelinks — clickable but visually plain
+%  - real text only, no \textsc / \textsf glyph swaps that confuse OCR
+%  - 10.5pt body, 1.15 line spacing, 0.6in margins
+
+\documentclass[10.5pt,a4paper]{article}
+
+\usepackage[a4paper, margin=0.6in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[hidelinks]{hyperref}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{xcolor}
+
+\definecolor{vp-accent}{HTML}{2563EB}
+\definecolor{vp-muted}{HTML}{64748B}
+
+\titleformat{\section}
+  {\large\bfseries\color{vp-accent}\uppercase}
+  {}{0pt}{}[\vspace{-4pt}\titlerule]
+\titlespacing*{\section}{0pt}{12pt}{6pt}
+
+\setlist[itemize]{leftmargin=*, topsep=2pt, itemsep=2pt, parsep=0pt}
+\pagenumbering{gobble}
+\linespread{1.15}
+
+\begin{document}
+
+% ── Header ───────────────────────────────────────────────────────────────────
+\begin{center}
+  {\Huge \bfseries {{ personal.full_name }}}\\[2pt]
+  {\large \color{vp-muted} {{ personal.title }}}\\[6pt]
+  {\small
+    {%- if personal.email -%}
+      {{ personal.email }}
+    {%- endif -%}
+    {%- if personal.phone %} \, \textbar \, {{ personal.phone }}{%- endif -%}
+    {%- if personal.location %} \, \textbar \, {{ personal.location }}{%- endif -%}
+    {%- if links.linkedin %} \, \textbar \, \href{ {{- links.linkedin -}} }{LinkedIn}{%- endif -%}
+    {%- if links.github %} \, \textbar \, \href{ {{- links.github -}} }{GitHub}{%- endif -%}
+    {%- if links.website %} \, \textbar \, \href{ {{- links.website -}} }{Website}{%- endif -%}
+  }
+\end{center}
+
+% ── Summary ──────────────────────────────────────────────────────────────────
+{% if summary %}
+\section*{Summary}
+{{ summary }}
+{% endif %}
+
+% ── Experience ───────────────────────────────────────────────────────────────
+{% if experience %}
+\section*{Experience}
+{% for job in experience %}
+\textbf{ {{ job.role }} } \hfill {{ job.start }} -- {{ job.end or "Present" }}\\
+\textit{ {{ job.company }} {% if job.location %} \,·\, {{ job.location }}{% endif %} }
+{% if job.bullets %}
+\begin{itemize}
+{% for b in job.bullets %}\item {{ b }}
+{% endfor %}
+\end{itemize}
+{% endif %}
+\vspace{4pt}
+{% endfor %}
+{% endif %}
+
+% ── Projects ─────────────────────────────────────────────────────────────────
+{% if projects %}
+\section*{Projects}
+{% for p in projects %}
+\textbf{ {{ p.name }} }{% if p.url %} \, \href{ {{- p.url -}} }{ \scriptsize\color{vp-accent} {{ p.url }} }{% endif %}\\
+{% if p.description %}{{ p.description }}\\{% endif %}
+{% if p.tech %}\textit{Tech:} {{ p.tech | join(", ") }}{% endif %}
+\vspace{4pt}
+{% endfor %}
+{% endif %}
+
+% ── Education ────────────────────────────────────────────────────────────────
+{% if education %}
+\section*{Education}
+{% for ed in education %}
+\textbf{ {{ ed.degree }} } \hfill {{ ed.year or "" }}\\
+{{ ed.institution }}{% if ed.detail %} \, ·\, {{ ed.detail }}{% endif %}
+\vspace{2pt}
+{% endfor %}
+{% endif %}
+
+% ── Skills ───────────────────────────────────────────────────────────────────
+{% if skills %}
+\section*{Skills}
+{{ skills | join(" \\textbullet\\ ") }}
+{% endif %}
+
+% ── Certifications ───────────────────────────────────────────────────────────
+{% if certifications %}
+\section*{Certifications}
+\begin{itemize}
+{% for c in certifications %}\item {{ c }}
+{% endfor %}
+\end{itemize}
+{% endif %}
+
+% ── Achievements ─────────────────────────────────────────────────────────────
+{% if achievements %}
+\section*{Achievements}
+\begin{itemize}
+{% for a in achievements %}\item {{ a }}
+{% endfor %}
+\end{itemize}
+{% endif %}
+
+\end{document}

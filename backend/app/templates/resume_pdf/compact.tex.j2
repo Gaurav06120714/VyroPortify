@@ -1,0 +1,43 @@
+% VyroPortify — Compact resume template (v2.3.4)
+% Tighter margins + smaller leading. Used by senior candidates with
+% lots of experience who need to fit on a single page.
+
+\documentclass[10pt,a4paper]{article}
+
+\usepackage[a4paper, margin=0.4in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[hidelinks]{hyperref}
+\usepackage{enumitem}
+\usepackage{titlesec}
+
+\titleformat{\section}{\small\bfseries\uppercase}{}{0pt}{}[\vspace{-4pt}\hrule]
+\titlespacing*{\section}{0pt}{8pt}{4pt}
+
+\setlist[itemize]{leftmargin=*, topsep=1pt, itemsep=1pt, parsep=0pt}
+\pagenumbering{gobble}
+\linespread{1.05}
+
+\begin{document}
+
+\noindent\textbf{ {\large {{ personal.full_name }} } } \hfill
+{%- if personal.email -%}{{ personal.email }}{%- endif -%}
+{%- if personal.phone %} \, \textbar \, {{ personal.phone }}{%- endif -%}\\
+\textit{ {{ personal.title }} }
+
+{% if summary %}\section*{Summary}{{ summary }}{% endif %}
+
+{% if experience %}\section*{Experience}
+{% for job in experience %}\textbf{ {{ job.role }} } — {{ job.company }} \hfill {{ job.start }} -- {{ job.end or "Present" }}\\
+{% if job.bullets %}\begin{itemize}{% for b in job.bullets %}\item {{ b }}
+{% endfor %}\end{itemize}{% endif %}
+{% endfor %}{% endif %}
+
+{% if skills %}\section*{Skills}{{ skills | join(" · ") }}{% endif %}
+
+{% if education %}\section*{Education}
+{% for ed in education %}{{ ed.degree }}, {{ ed.institution }} \hfill {{ ed.year or "" }}\\
+{% endfor %}{% endif %}
+
+\end{document}

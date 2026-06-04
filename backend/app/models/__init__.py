@@ -4,6 +4,7 @@ from app.models.organization import Membership, Organization
 from app.models.portfolio import Portfolio
 from app.models.portfolio_view import PortfolioView
 from app.models.resume import Resume
+from app.models.resume_export import ResumeExport
 from app.models.template import Template, TemplateReview
 from app.models.user import User
 
@@ -18,4 +19,5 @@ __all__ = [
     "Membership",
     "AuditEvent",
     "PortfolioView",
+    "ResumeExport",
 ]

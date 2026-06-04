@@ -45,6 +45,10 @@ dependencies = [
     "pillow>=10.0.0",
     # custom-domain CNAME verification (v1.2.1)
     "dnspython>=2.6.0",
+    # resume PDF export — ReportLab fallback engine when tectonic isn't
+    # available on PATH (v2.3.0). Tectonic is shipped in the worker
+    # Docker image; reportlab keeps dev/CI green without a 120 MB add.
+    "reportlab>=4.0.0",
 ]
 
 [project.optional-dependencies]

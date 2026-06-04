@@ -1,0 +1,55 @@
+% VyroPortify — Classic resume template (v2.3.4)
+% Serif body, centered title, all-caps section headings without color.
+% Same ATS rules as modern.tex.j2 — single column, real text, no icons.
+
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[a4paper, margin=0.7in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{mathptmx}  % Times-like serif for ATS friendliness
+\usepackage[hidelinks]{hyperref}
+\usepackage{enumitem}
+\usepackage{titlesec}
+
+\titleformat{\section}{\bfseries\uppercase}{}{0pt}{}[\vspace{-6pt}\titlerule]
+\titlespacing*{\section}{0pt}{12pt}{6pt}
+
+\setlist[itemize]{leftmargin=*, topsep=2pt, itemsep=2pt, parsep=0pt}
+\pagenumbering{gobble}
+\linespread{1.15}
+
+\begin{document}
+
+\begin{center}
+  {\LARGE \textbf{ {{ personal.full_name }} }}\\[2pt]
+  {\large {{ personal.title }}}\\[4pt]
+  {\small
+    {%- if personal.email -%}{{ personal.email }}{%- endif -%}
+    {%- if personal.phone %} \, \textbar \, {{ personal.phone }}{%- endif -%}
+    {%- if personal.location %} \, \textbar \, {{ personal.location }}{%- endif -%}
+  }
+\end{center}
+
+{% if summary %}\section*{Summary}{{ summary }}{% endif %}
+
+{% if experience %}\section*{Experience}
+{% for job in experience %}
+\textbf{ {{ job.role }} }, {{ job.company }} \hfill {{ job.start }} -- {{ job.end or "Present" }}
+{% if job.bullets %}\begin{itemize}{% for b in job.bullets %}\item {{ b }}
+{% endfor %}\end{itemize}{% endif %}
+\vspace{4pt}
+{% endfor %}{% endif %}
+
+{% if education %}\section*{Education}
+{% for ed in education %}\textbf{ {{ ed.degree }} } \hfill {{ ed.year or "" }}\\
+{{ ed.institution }}\\[2pt]
+{% endfor %}{% endif %}
+
+{% if skills %}\section*{Skills}{{ skills | join(", ") }}{% endif %}
+
+{% if projects %}\section*{Projects}
+{% for p in projects %}\textbf{ {{ p.name }} } — {{ p.description or "" }}\\
+{% endfor %}{% endif %}
+
+\end{document}

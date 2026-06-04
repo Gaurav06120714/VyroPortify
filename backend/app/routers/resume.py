@@ -646,3 +646,141 @@ async def get_resume_status(
         status=resume.status,
         parsed_data=resume.parsed_data,
     )
+
+
+# ── POST /{id}/export-pdf (v2.3) ──────────────────────────────────────────────
+
+@router.post(
+    "/{resume_id}/export-pdf",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Render an ATS-friendly resume PDF (Modern/Classic/Compact)",
+)
+@limiter.limit("10/hour")
+async def export_resume_pdf_endpoint(
+    request: Request,
+    resume_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DB,
+    template_id: str = "modern",
+) -> dict:
+    """Start an async PDF render. Returns the export id + cache status.
+
+    Idempotency: if a row with the same (resume_id, content_hash) already
+    has an s3_key, return it immediately — no recompile. Repeat clicks
+    on `Download PDF` against unchanged data are a single Stripe call,
+    not a fresh render.
+    """
+    from sqlalchemy import desc
+
+    from app.models.resume_export import ResumeExport
+    from app.services.resume_pdf import ResumePayload, TEMPLATES, content_hash
+
+    if template_id not in TEMPLATES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown template '{template_id}'; choose one of {sorted(TEMPLATES)}",
+        )
+
+    resume = await _get_resume_or_404(resume_id, current_user, db)
+    if not resume.parsed_data:
+        raise HTTPException(
+            status_code=400,
+            detail="Resume hasn't been parsed yet. Wait for parsing to complete first.",
+        )
+
+    payload = ResumePayload(
+        personal=resume.parsed_data.get("personal", {})
+            or {
+                "full_name": resume.parsed_data.get("full_name"),
+                "email": resume.parsed_data.get("email"),
+                "phone": resume.parsed_data.get("phone"),
+            },
+        links=resume.parsed_data.get("links", {}),
+        summary=resume.parsed_data.get("summary"),
+        experience=resume.parsed_data.get("work_experience", []),
+        education=resume.parsed_data.get("education", []),
+        skills=resume.parsed_data.get("skills", []),
+        projects=resume.parsed_data.get("projects", []),
+        certifications=resume.parsed_data.get("certifications", []),
+        achievements=resume.parsed_data.get("achievements", []),
+    )
+    chash = content_hash(payload, template_id)
+
+    # Cache lookup: same payload + template → return the prior export.
+    existing = await db.execute(
+        select(ResumeExport)
+        .where(
+            ResumeExport.resume_id == resume.id,
+            ResumeExport.content_hash == chash,
+            ResumeExport.s3_key.isnot(None),
+        )
+        .order_by(desc(ResumeExport.created_at))
+        .limit(1)
+    )
+    hit = existing.scalar_one_or_none()
+    if hit is not None:
+        return {
+            "export_id": str(hit.id),
+            "status": "completed",
+            "cached": True,
+            "engine": hit.engine,
+        }
+
+    export = ResumeExport(
+        resume_id=resume.id,
+        user_id=current_user.id,
+        content_hash=chash,
+        template_id=template_id,
+    )
+    db.add(export)
+    await db.commit()
+    await db.refresh(export)
+
+    # Dispatch render off-process. Synchronous .run() is available for
+    # tests that want to skip Celery; production goes through .delay().
+    try:
+        from app.workers.tasks.export_resume_pdf import export_resume_pdf as task
+
+        task.delay(str(export.id))
+    except Exception as exc:
+        logger.warning("export_pdf_dispatch_failed: %s", exc)
+
+    return {
+        "export_id": str(export.id),
+        "status": "queued",
+        "cached": False,
+    }
+
+
+@router.get(
+    "/exports/{export_id}",
+    summary="Get a resume export status + presigned download URL when ready",
+)
+async def get_resume_export(
+    export_id: uuid.UUID, current_user: CurrentUser, db: DB
+) -> dict:
+    from app.models.resume_export import ResumeExport
+
+    export = await db.get(ResumeExport, export_id)
+    if export is None or export.user_id != current_user.id:
+        # Same OWASP DOR policy as elsewhere: 404 on foreign / missing.
+        raise HTTPException(status_code=404, detail="Export not found")
+
+    if not export.s3_key:
+        return {"status": "queued"}
+
+    try:
+        url = await storage.presigned_url(export.s3_key, ttl_hours=2)
+    except Exception as exc:
+        logger.warning(
+            "export_presign_failed id=%s err=%s", export.id, exc
+        )
+        raise HTTPException(status_code=502, detail="Could not generate download URL")
+
+    return {
+        "status": "completed",
+        "download_url": url,
+        "file_size": export.file_size,
+        "engine": export.engine,
+        "template_id": export.template_id,
+    }
