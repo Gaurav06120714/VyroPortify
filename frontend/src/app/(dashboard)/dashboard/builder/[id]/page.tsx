@@ -162,13 +162,39 @@ export default function BuilderPage() {
               title="Portfolio preview"
               className="h-full w-full border-0"
               // Mirror the public viewer sandbox so the preview behaves
-              // identically to what real visitors will see.
+              // identically to what real visitors will see. v1.7.5 adds
+              // pinch-zoom on touch devices so a small phone screen can
+              // still see the whole portfolio.
               sandbox="allow-scripts allow-same-origin"
+              style={{ touchAction: "pinch-zoom" }}
             />
           ) : (
             <PreviewEmpty />
           )}
         </section>
+      </div>
+
+      {/* v1.7.5 — Sticky bottom CTA on mobile only. Mirrors the rest of the
+          dashboard's mobile pattern so the primary action is always one
+          thumb-tap away, regardless of how far the user has scrolled. */}
+      <div className="border-t border-[var(--pf-border-light)] bg-[var(--pf-bg)] p-3 lg:hidden">
+        {tab === "edit" ? (
+          <button
+            onClick={() => setTabAndUrl("preview")}
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[var(--pf-accent)] text-sm font-semibold text-white transition-colors hover:bg-[var(--pf-accent-hover)]"
+          >
+            <Eye className="h-4 w-4" />
+            See live preview
+          </button>
+        ) : (
+          <button
+            onClick={() => setTabAndUrl("edit")}
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[var(--pf-border-light)] bg-[var(--pf-surface)] text-sm font-semibold text-[var(--pf-text)] transition-colors hover:bg-[var(--pf-surface2)]"
+          >
+            <PenLine className="h-4 w-4" />
+            Back to edit
+          </button>
+        )}
       </div>
     </div>
   );
