@@ -18,7 +18,7 @@ from __future__ import annotations
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, Index, String, UniqueConstraint
+from sqlalchemy import Boolean, ForeignKey, Index, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -62,6 +62,22 @@ class Organization(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     # by billing to allow free-tier seat count (1).
     is_personal: Mapped[bool] = mapped_column(
         nullable=False, server_default="false"
+    )
+
+    # ── White-label branding (v3.0.3, enterprise-gated) ──────────────────────
+    # Applied to all portfolios owned by the org's members. Values left NULL
+    # mean "use the template's defaults" — the renderer treats absent values
+    # as fall-through rather than wiping the template look.
+    logo_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    primary_color: Mapped[str | None] = mapped_column(String(9), nullable=True)
+    accent_color: Mapped[str | None] = mapped_column(String(9), nullable=True)
+    font_family: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    # Free-form CSS appended after the template stylesheet. Sanitised on PUT
+    # (no `<script>`, no `<iframe>`, no `@import` to remote URLs).
+    custom_css: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # When True the "Powered by VyroPortify" footer is omitted.
+    hide_branding: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default="false"
     )
 
     memberships: Mapped[list["Membership"]] = relationship(
