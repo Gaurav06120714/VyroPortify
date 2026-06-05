@@ -300,10 +300,15 @@ async def get_public_portfolio(request: Request, slug: str, db: DB) -> Portfolio
 
         from app.models.portfolio_view import PortfolioView
 
+        # synchronize_session=False: the UPDATE doesn't need to invalidate
+        # the in-memory `p` object. Without this, SQLAlchemy expires
+        # `p`'s attributes and the subsequent _to_response(p) triggers
+        # a lazy reload outside the greenlet context → MissingGreenlet.
         await db.execute(
             update(Portfolio)
             .where(Portfolio.id == p.id)
             .values(views=Portfolio.views + 1)
+            .execution_options(synchronize_session=False)
         )
 
         client_ip = request.client.host if request.client else "unknown"
