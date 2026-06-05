@@ -32,6 +32,7 @@ from app.routers import (
     auth,
     billing,
     bulk_export,
+    clerk_webhook,
     compliance,
     connect,
     marketplace,
@@ -340,6 +341,7 @@ app.include_router(compliance.router,   prefix=settings.API_V1_PREFIX)
 app.include_router(sso.router,          prefix=settings.API_V1_PREFIX)
 app.include_router(analytics.router,    prefix=settings.API_V1_PREFIX)
 app.include_router(bulk_export.router,  prefix=settings.API_V1_PREFIX)
+app.include_router(clerk_webhook.router, prefix=settings.API_V1_PREFIX)
 
 
 # ── Health checks ──────────────────────────────────────────────────────────────

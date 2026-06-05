@@ -64,6 +64,9 @@ class Settings(BaseSettings):
     # Format: https://<your-clerk-subdomain>.clerk.accounts.dev/.well-known/jwks.json
     # Do NOT hardcode this — your subdomain identifies your Clerk instance.
     CLERK_JWKS_URL: str = ""
+    # Signing secret for Clerk webhooks (Settings → Webhooks → Signing Secret).
+    # Required for /api/v1/auth/clerk-webhook signature verification (v3.4.0).
+    CLERK_WEBHOOK_SECRET: str = ""
 
     # ── Storage — AWS S3 or Cloudflare R2 (same boto3 interface) ─────────
     # Provider selection: "s3" | "r2"
