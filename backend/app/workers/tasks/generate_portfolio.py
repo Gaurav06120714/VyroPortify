@@ -49,9 +49,22 @@ async def _generate_async(portfolio_id: str) -> None:
             # ── 2. Enhance with Claude ─────────────────────────────────────
             enhanced = content_enhancer.enhance(parsed_data)
 
-            # ── 3. Render template ─────────────────────────────────────────
+            # ── 3. Render template (with org white-label branding, v3.0.3) ──
             template_id = portfolio.template_id or "aurora"
-            html = template_injector.inject(template_id, parsed_data, enhanced)
+            branding: dict = {}
+            if portfolio.organization_id is not None:
+                from app.models.organization import Organization
+                org = await db.get(Organization, portfolio.organization_id)
+                if org is not None and org.plan == "enterprise":
+                    branding = {
+                        "logo_url": org.logo_url,
+                        "primary_color": org.primary_color,
+                        "accent_color": org.accent_color,
+                        "font_family": org.font_family,
+                        "custom_css": org.custom_css,
+                        "hide_branding": org.hide_branding,
+                    }
+            html = template_injector.inject(template_id, parsed_data, enhanced, branding=branding)
 
             # ── 4. Upload HTML to S3 ───────────────────────────────────────
             html_bytes = html.encode("utf-8")

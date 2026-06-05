@@ -101,13 +101,22 @@ class TemplateInjector:
             )
         return self._envs[template_id]
 
-    def inject(self, template_id: str, parsed_data: dict, enhanced: dict) -> str:
-        """Render the template with resume + enhanced data merged.
+    def inject(
+        self,
+        template_id: str,
+        parsed_data: dict,
+        enhanced: dict,
+        branding: dict | None = None,
+    ) -> str:
+        """Render the template with resume + enhanced data + optional org branding.
 
         Args:
             template_id: 'aurora' | 'minimal' | 'cyber'
             parsed_data:  ResumeData as dict
             enhanced:     ContentEnhancer output dict
+            branding:     v3.0.3 white-label dict — keys: logo_url, primary_color,
+                          accent_color, font_family, custom_css, hide_branding.
+                          NULL values fall through to the template's own defaults.
 
         Returns:
             Rendered HTML string.
@@ -123,6 +132,13 @@ class TemplateInjector:
 
         # Normalise nested objects to plain dicts for Jinja2
         ctx = _normalise(ctx)
+
+        # v3.0.3 — append a <style> block with CSS vars + custom_css.
+        # Backwards-compatible: templates that don't reference these vars
+        # simply ignore the injected block.
+        branding = branding or {}
+        ctx["branding"] = branding
+        ctx["branding_style"] = _build_branding_style(branding)
         return tmpl.render(**ctx)
 
 
@@ -135,6 +151,26 @@ def _normalise(obj):
     if isinstance(obj, list):
         return [_normalise(i) for i in obj]
     return obj
+
+
+def _build_branding_style(branding: dict) -> str:
+    """Return a <style> snippet exposing branding values as CSS variables.
+
+    Templates can reference them as `var(--brand-primary)` etc. If a value is
+    absent the variable is simply omitted, so the template's own default wins.
+    """
+    if not branding:
+        return ""
+    pairs: list[str] = []
+    if branding.get("primary_color"):
+        pairs.append(f"--brand-primary: {branding['primary_color']};")
+    if branding.get("accent_color"):
+        pairs.append(f"--brand-accent: {branding['accent_color']};")
+    if branding.get("font_family"):
+        pairs.append(f"--brand-font: {branding['font_family']!r};")
+    css_var_block = f":root {{ {' '.join(pairs)} }}" if pairs else ""
+    custom = branding.get("custom_css") or ""
+    return f"<style>{css_var_block}\n{custom}</style>" if (css_var_block or custom) else ""
 
 
 # Module-level singletons
