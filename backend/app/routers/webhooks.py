@@ -167,6 +167,52 @@ async def list_deliveries(
     ]
 
 
+@router.get("/events")
+async def list_event_catalog() -> dict:
+    """v3.3.0 — Public catalog of every event type a subscriber can choose."""
+    return {
+        "events": [
+            {"name": "portfolio.published", "description": "A portfolio finished generating and is live."},
+            {"name": "portfolio.failed", "description": "Portfolio generation failed after all retries."},
+            {"name": "subscription.changed", "description": "Stripe subscription created/updated/cancelled."},
+            {"name": "resume.parsed", "description": "An uploaded resume finished parsing."},
+            {"name": "ping", "description": "Manual test event from POST /webhooks/{id}/test."},
+            {"name": "*", "description": "Wildcard — receive every event the user emits."},
+        ],
+        "signature_scheme": "X-VyroPortify-Signature: t=<unix>,v1=<hex_hmac_sha256> over `{t}.{body}`",
+        "replay_window_seconds": 300,
+    }
+
+
+@router.post("/{endpoint_id}/deliveries/{delivery_id}/replay", status_code=status.HTTP_202_ACCEPTED)
+async def replay_delivery(
+    endpoint_id: uuid.UUID,
+    delivery_id: uuid.UUID,
+    db: DB,
+    current_user: CurrentUser,
+) -> dict:
+    """v3.3.0 — Re-dispatch a previously recorded delivery (forensics + replay).
+
+    Useful when a receiver was down during the original window — the user can
+    re-fire the exact same payload from the UI without crafting it manually.
+    """
+    ep = await db.get(WebhookEndpoint, endpoint_id)
+    if ep is None or ep.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Endpoint not found")
+    delivery = await db.get(WebhookDelivery, delivery_id)
+    if delivery is None or delivery.endpoint_id != endpoint_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Delivery not found")
+
+    from app.workers.tasks.deliver_webhook import deliver_webhook_task
+
+    deliver_webhook_task.delay(
+        endpoint_id=str(ep.id),
+        event=delivery.event,
+        data=(delivery.payload or {}).get("data", {}),
+    )
+    return {"enqueued": True, "replayed_delivery_id": str(delivery.id)}
+
+
 @router.post("/{endpoint_id}/test", status_code=status.HTTP_202_ACCEPTED)
 async def test_endpoint(endpoint_id: uuid.UUID, db: DB, current_user: CurrentUser) -> dict:
     ep = await db.get(WebhookEndpoint, endpoint_id)
