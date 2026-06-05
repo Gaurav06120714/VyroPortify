@@ -6,6 +6,7 @@ from app.models.portfolio import Portfolio
 from app.models.portfolio_view import PortfolioView
 from app.models.resume import Resume
 from app.models.resume_export import ResumeExport
+from app.models.sso import SSOConfig
 from app.models.template import Template, TemplateReview
 from app.models.oauth import OAuthAccessToken, OAuthApp, OAuthAuthorizationCode
 from app.models.user import User
@@ -29,4 +30,5 @@ __all__ = [
     "OAuthApp",
     "OAuthAuthorizationCode",
     "OAuthAccessToken",
+    "SSOConfig",
 ]

@@ -38,6 +38,7 @@ from app.routers import (
     portfolio,
     public_api,
     resume,
+    sso,
     webhooks,
 )
 
@@ -295,6 +296,7 @@ app.include_router(public_api.router,   prefix=settings.API_V1_PREFIX)
 app.include_router(webhooks.router,     prefix=settings.API_V1_PREFIX)
 app.include_router(oauth.router,        prefix=settings.API_V1_PREFIX)
 app.include_router(compliance.router,   prefix=settings.API_V1_PREFIX)
+app.include_router(sso.router,          prefix=settings.API_V1_PREFIX)
 
 
 # ── Health checks ──────────────────────────────────────────────────────────────
