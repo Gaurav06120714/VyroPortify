@@ -30,6 +30,9 @@ dependencies = [
     "jinja2>=3.1.0",
     # payments
     "stripe>=10.0.0",
+    # admin exports + Clerk webhook signature verify (v3.4.0)
+    "openpyxl>=3.1.0",
+    "svix>=1.40.0",
     # observability
     "sentry-sdk[fastapi,sqlalchemy,celery]>=2.0.0",
     # rate limiting

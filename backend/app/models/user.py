@@ -27,6 +27,11 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     # hashed_password kept as nullable so existing rows don't break; not used with Clerk.
     hashed_password: Mapped[str | None] = mapped_column(Text, nullable=True)
     name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # v3.4.0 — E.164 phone number mirrored from Clerk (verified at signup).
+    # Unique when present so two accounts can't share a mobile.
+    phone_number: Mapped[str | None] = mapped_column(
+        String(32), unique=True, nullable=True, index=True
+    )
     avatar_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     plan: Mapped[str] = mapped_column(
         String(50),
