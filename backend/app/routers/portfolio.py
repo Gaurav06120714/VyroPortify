@@ -47,11 +47,16 @@ router = APIRouter(prefix="/portfolio", tags=["Portfolio"])
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
 def _slugify(name: str, user_id: uuid.UUID) -> str:
+    # Bug fix: previous shape `{name}-{user_id[:8]}` collapsed to a single
+    # slug per user, so a second portfolio attempt 500'd on the unique
+    # constraint uq_portfolios_slug. Append a random suffix so every
+    # build attempt gets its own URL — collisions are 1-in-16M per user.
     slug = name.lower().strip()
     slug = re.sub(r"[^a-z0-9\s-]", "", slug)
     slug = re.sub(r"\s+", "-", slug)
-    slug = slug[:40]
-    return f"{slug}-{str(user_id)[:8]}"
+    slug = slug[:30]
+    suffix = uuid.uuid4().hex[:6]
+    return f"{slug}-{str(user_id)[:6]}-{suffix}"
 
 
 async def _get_portfolio_or_404(
