@@ -86,7 +86,7 @@ async def _parse_resume_async(resume_id: str) -> None:
     retry_backoff=True,        # exponential back-off: 30s, 60s, 120s
     retry_backoff_max=300,     # cap back-off at 5 minutes
     retry_jitter=True,         # add random jitter to avoid thundering herd
-    queue="default",
+    # queue= removed: orphaned tasks on a no-listener queue
     acks_late=True,            # only ack after successful completion
     reject_on_worker_lost=True,  # re-queue if worker process is killed mid-task
 )

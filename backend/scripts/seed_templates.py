@@ -1,11 +1,17 @@
-"""Seed 3 default portfolio templates.
+"""Seed the four canonical portfolio templates.
 
 Usage (from /backend with .venv active):
     python -m scripts.seed_templates
 
-The script is fully idempotent — it uses INSERT … ON CONFLICT DO UPDATE so it
-is safe to re-run any number of times. Existing rows are updated in-place if
-the config has changed.
+The script is fully idempotent — INSERT … ON CONFLICT DO UPDATE so it is safe
+to re-run any number of times. Existing rows are updated in-place if config
+has changed.
+
+The four IDs match app.core.enums.TemplateID and the on-disk template
+directories at app/templates/{aurora,minimal,cyber,executive}/.
+The previous seeder shipped with stale ids (minimal/modern/bold) which
+caused POST /portfolio/generate to 5xx with a FK violation when the
+frontend asked for `aurora`.
 """
 
 import asyncio
@@ -21,6 +27,31 @@ from app.models.template import Template
 
 DEFAULT_TEMPLATES: list[dict[str, Any]] = [
     {
+        "id": "aurora",
+        "name": "Aurora",
+        "preview_url": "https://cdn.vyroportify.com/previews/aurora.png",
+        "category": "developer",
+        "is_pro": False,
+        "config": {
+            "layout": "single-column",
+            "fonts": {"heading": "Inter", "body": "Inter"},
+            "colors": {
+                "primary": "#0a0a14",
+                "accent": "#7c5cff",
+                "background": "#0a0a14",
+                "surface": "#13131e",
+                "text": "#f5f5fa",
+            },
+            "sections": {
+                "hero": True, "about": True, "experience": True,
+                "education": True, "skills": True, "projects": True,
+                "awards": False, "contact": True,
+            },
+            "border_radius": "0.75rem",
+            "spacing": "comfortable",
+        },
+    },
+    {
         "id": "minimal",
         "name": "Minimal",
         "preview_url": "https://cdn.vyroportify.com/previews/minimal.png",
@@ -28,10 +59,7 @@ DEFAULT_TEMPLATES: list[dict[str, Any]] = [
         "is_pro": False,
         "config": {
             "layout": "single-column",
-            "fonts": {
-                "heading": "Inter",
-                "body": "Inter",
-            },
+            "fonts": {"heading": "Inter", "body": "Inter"},
             "colors": {
                 "primary": "#111827",
                 "accent": "#6366f1",
@@ -40,80 +68,59 @@ DEFAULT_TEMPLATES: list[dict[str, Any]] = [
                 "text": "#374151",
             },
             "sections": {
-                "hero": True,
-                "about": True,
-                "experience": True,
-                "education": True,
-                "skills": True,
-                "projects": False,
-                "awards": False,
-                "contact": True,
+                "hero": True, "about": True, "experience": True,
+                "education": True, "skills": True, "projects": False,
+                "awards": False, "contact": True,
             },
             "border_radius": "0.375rem",
             "spacing": "comfortable",
         },
     },
     {
-        "id": "modern",
-        "name": "Modern",
-        "preview_url": "https://cdn.vyroportify.com/previews/modern.png",
+        "id": "cyber",
+        "name": "Cyber",
+        "preview_url": "https://cdn.vyroportify.com/previews/cyber.png",
         "category": "developer",
-        "is_pro": False,
+        "is_pro": True,
         "config": {
-            "layout": "two-column",
-            "fonts": {
-                "heading": "Geist",
-                "body": "Geist",
-            },
+            "layout": "single-column",
+            "fonts": {"heading": "Space Grotesk", "body": "JetBrains Mono"},
             "colors": {
-                "primary": "#0f172a",
-                "accent": "#0ea5e9",
-                "background": "#f8fafc",
-                "surface": "#e2e8f0",
-                "text": "#1e293b",
+                "primary": "#000000",
+                "accent": "#00ff9c",
+                "background": "#0a0a0a",
+                "surface": "#141414",
+                "text": "#e6e6e6",
             },
             "sections": {
-                "hero": True,
-                "about": True,
-                "experience": True,
-                "education": True,
-                "skills": True,
-                "projects": True,
-                "awards": False,
-                "contact": True,
+                "hero": True, "about": True, "experience": True,
+                "education": True, "skills": True, "projects": True,
+                "awards": True, "contact": True,
             },
-            "border_radius": "0.5rem",
+            "border_radius": "0.25rem",
             "spacing": "compact",
         },
     },
     {
-        "id": "bold",
-        "name": "Bold",
-        "preview_url": "https://cdn.vyroportify.com/previews/bold.png",
-        "category": "designer",
+        "id": "executive",
+        "name": "Executive",
+        "preview_url": "https://cdn.vyroportify.com/previews/executive.png",
+        "category": "executive",
         "is_pro": True,
         "config": {
-            "layout": "magazine",
-            "fonts": {
-                "heading": "Playfair Display",
-                "body": "Source Sans Pro",
-            },
+            "layout": "two-column",
+            "fonts": {"heading": "Playfair Display", "body": "Source Sans Pro"},
             "colors": {
-                "primary": "#1e1b4b",
-                "accent": "#f59e0b",
+                "primary": "#1a1a2e",
+                "accent": "#c8a96a",
                 "background": "#fafaf9",
                 "surface": "#f5f0e8",
                 "text": "#292524",
             },
             "sections": {
-                "hero": True,
-                "about": True,
-                "experience": True,
-                "education": True,
-                "skills": True,
-                "projects": True,
-                "awards": True,
-                "contact": True,
+                "hero": True, "about": True, "experience": True,
+                "education": True, "skills": True, "projects": True,
+                "awards": True, "contact": True,
             },
             "border_radius": "0rem",
             "spacing": "spacious",

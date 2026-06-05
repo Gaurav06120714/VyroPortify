@@ -102,7 +102,11 @@ async def _generate_async(portfolio_id: str) -> None:
     retry_backoff=True,        # exponential back-off: 30s, 60s, 120s
     retry_backoff_max=300,     # cap back-off at 5 minutes
     retry_jitter=True,         # jitter to spread retries across workers
-    queue="default",
+    # No `queue=` override: Celery's default is `celery`, and the
+    # worker (started without -Q) listens there. Setting
+    # queue="default" pushed tasks onto a queue no worker consumed,
+    # leaving the UI stuck on "Almost Ready!" forever while the
+    # message sat untouched in Redis.
     acks_late=True,            # only ack after successful completion
     reject_on_worker_lost=True,  # re-queue if worker is killed mid-task
 )
