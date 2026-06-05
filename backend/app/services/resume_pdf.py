@@ -34,7 +34,12 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Literal
 
-from jinja2 import Environment, FileSystemLoader, StrictUndefined, select_autoescape
+from jinja2 import (
+    ChainableUndefined,
+    Environment,
+    FileSystemLoader,
+    select_autoescape,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -100,7 +105,17 @@ def _jinja_env() -> Environment:
     env = Environment(
         loader=FileSystemLoader(str(TEMPLATE_DIR)),
         autoescape=select_autoescape(disabled_extensions=("tex.j2",)),
-        undefined=StrictUndefined,
+        # B26 fix: ChainableUndefined instead of StrictUndefined.
+        # StrictUndefined raised on `links.linkedin` whenever the
+        # payload's `links` dict simply didn't carry that key — that
+        # made `{% if links.linkedin %}` 500 instead of falsy.
+        # ChainableUndefined returns Undefined on missing access, which
+        # is falsy in {% if %} and renders as an empty string in
+        # {{ … }} (then escaped to empty by finalize). We still want
+        # the strict behavior of catching truly unset top-level vars
+        # at the call site — render() passes every required kwarg
+        # explicitly, so StrictUndefined's guard isn't pulling weight.
+        undefined=ChainableUndefined,
         keep_trailing_newline=True,
         finalize=latex_escape,
     )
