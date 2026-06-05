@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
  * postMessage bridge from the unified builder (parent window) to the preview
@@ -38,6 +38,14 @@ export function usePreviewBridge({
   iframeRef,
   readyTimeoutMs = 4000,
 }: Options): UsePreviewBridgeResult {
+  // B8 fix: ready is now React state so consumers re-render on the
+  // handshake. The previous version held it in a ref, which mutates
+  // silently — components that conditionally rendered on `ready`
+  // (e.g. a "Connecting…" placeholder) stayed stuck on `false`
+  // forever even after the iframe acked. The ref is preserved for
+  // the imperative event-handler path where we need a synchronous
+  // read without waiting for state propagation.
+  const [ready, setReady] = useState(false);
   const readyRef = useRef(false);
   const queuedRef = useRef<unknown[]>([]);
 
@@ -51,6 +59,7 @@ export function usePreviewBridge({
 
       if (data.type === "vyro:preview:ready") {
         readyRef.current = true;
+        setReady(true);
         // Flush anything queued before handshake.
         const iframe = iframeRef.current;
         if (iframe?.contentWindow) {
@@ -89,7 +98,8 @@ export function usePreviewBridge({
     (payload: unknown) => {
       const iframe = iframeRef.current;
       if (!readyRef.current || !iframe?.contentWindow) {
-        // Queue until the iframe signals ready.
+        // Queue until the iframe signals ready. Read from the ref
+        // (synchronous) rather than `ready` state (stale-closure risk).
         queuedRef.current.push(payload);
         return;
       }
@@ -101,5 +111,5 @@ export function usePreviewBridge({
     [targetOrigin, iframeRef],
   );
 
-  return { ready: readyRef.current, push };
+  return { ready, push };
 }
