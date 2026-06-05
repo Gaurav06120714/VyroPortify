@@ -30,6 +30,7 @@ celery_app = Celery(
         # but the message sits in the queue forever.
         "app.workers.tasks.send_email",
         "app.workers.tasks.export_resume_pdf",
+        "app.workers.tasks.deliver_webhook",
     ],
 )
 
