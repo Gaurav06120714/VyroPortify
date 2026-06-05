@@ -55,14 +55,23 @@ def _slugify(name: str, user_id: uuid.UUID) -> str:
 
 
 async def _get_portfolio_or_404(
-    portfolio_id: uuid.UUID, user: User, db: DB
+    portfolio_id: uuid.UUID,
+    user: User,
+    db: DB,
+    *,
+    min_role: str = "viewer",
 ) -> Portfolio:
-    # Fetch by primary key only; ownership is enforced by assert_owner so the
-    # policy lives in a single audited place (app.core.authz).
+    # B4: ownership OR org membership. min_role lets mutating routes
+    # require "editor" while read paths accept "viewer". Default keeps
+    # current behavior backwards-compatible for read endpoints.
+    from app.core.authz import assert_resource_access
+
     result = await db.execute(
         select(Portfolio).where(Portfolio.id == portfolio_id)
     )
-    return assert_owner(result.scalar_one_or_none(), user)
+    return await assert_resource_access(
+        db, result.scalar_one_or_none(), user, min_role=min_role,
+    )
 
 
 def _to_response(p: Portfolio) -> PortfolioResponse:
@@ -326,7 +335,7 @@ async def toggle_publish(
     current_user: CurrentUser,
     db: DB,
 ) -> PortfolioResponse:
-    p = await _get_portfolio_or_404(portfolio_id, current_user, db)
+    p = await _get_portfolio_or_404(portfolio_id, current_user, db, min_role="editor")
     p.is_public = not p.is_public
     await db.commit()
     # Invalidate public cache
@@ -347,7 +356,7 @@ async def delete_portfolio(
     current_user: CurrentUser,
     db: DB,
 ) -> None:
-    p = await _get_portfolio_or_404(portfolio_id, current_user, db)
+    p = await _get_portfolio_or_404(portfolio_id, current_user, db, min_role="editor")
     # Invalidate public cache before deletion
     if p.slug:
         await cache.delete(f"portfolio:public:{p.slug}")
@@ -367,7 +376,7 @@ async def portfolio_analytics(
     db: DB,
     days: int = 30,
 ) -> dict:
-    p = await _get_portfolio_or_404(portfolio_id, current_user, db)
+    p = await _get_portfolio_or_404(portfolio_id, current_user, db, min_role="editor")
 
     from datetime import datetime, timedelta, timezone
 
@@ -501,7 +510,7 @@ async def attach_custom_domain(
     current_user: CurrentUser,
     db: DB,
 ) -> CustomDomainResponse:
-    p = await _get_portfolio_or_404(portfolio_id, current_user, db)
+    p = await _get_portfolio_or_404(portfolio_id, current_user, db, min_role="editor")
 
     try:
         domain = domain_verification.normalize_domain(body.domain)
@@ -543,6 +552,7 @@ async def get_custom_domain(
     current_user: CurrentUser,
     db: DB,
 ) -> CustomDomainResponse:
+    # Read endpoint — viewer role is enough.
     p = await _get_portfolio_or_404(portfolio_id, current_user, db)
     if not p.custom_domain:
         return _domain_response(p, None)
@@ -563,7 +573,7 @@ async def detach_custom_domain(
     current_user: CurrentUser,
     db: DB,
 ) -> CustomDomainResponse:
-    p = await _get_portfolio_or_404(portfolio_id, current_user, db)
+    p = await _get_portfolio_or_404(portfolio_id, current_user, db, min_role="editor")
     p.custom_domain = None
     await db.commit()
     await cache.delete(f"portfolio:public:{p.slug}")

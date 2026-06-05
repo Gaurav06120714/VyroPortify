@@ -257,14 +257,27 @@ async def generate_cover_letter(
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
-async def _get_resume_or_404(resume_id: uuid.UUID, user: User, db: DB) -> Resume:
-    """Fetch a resume owned by *user*, or raise 404.
+async def _get_resume_or_404(
+    resume_id: uuid.UUID,
+    user: User,
+    db: DB,
+    *,
+    min_role: str = "viewer",
+) -> Resume:
+    """Fetch a resume the caller may access, or raise 404.
 
-    Ownership is enforced via app.core.authz.assert_owner so the policy lives
-    in a single audited place.
+    B4: extended from pure-owner to "owner OR org-member with min_role".
+    Mutating routes (delete, export) pass min_role="editor"; read paths
+    keep the default. Public access continues to require explicit
+    publication via the public viewer route — this only affects
+    authed endpoints.
     """
+    from app.core.authz import assert_resource_access
+
     result = await db.execute(select(Resume).where(Resume.id == resume_id))
-    return assert_owner(result.scalar_one_or_none(), user)
+    return await assert_resource_access(
+        db, result.scalar_one_or_none(), user, min_role=min_role,
+    )
 
 
 def _to_response(resume: Resume, presigned_url: str | None = None) -> ResumeResponse:
@@ -596,7 +609,7 @@ async def delete_resume(
     current_user: CurrentUser,
     db: DB,
 ) -> None:
-    resume = await _get_resume_or_404(resume_id, current_user, db)
+    resume = await _get_resume_or_404(resume_id, current_user, db, min_role="editor")
 
     # ── 1. Delete from S3 first ───────────────────────────────────────────
     # Strategy: delete S3 object before the DB row. If S3 fails we return 502

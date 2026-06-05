@@ -172,3 +172,58 @@ def require_role(minimum: str) -> Callable:
 # module bottom so the lightweight-import discipline of this file
 # (everything else is late-imported) survives.
 from fastapi import Request  # noqa: E402
+
+
+# ── Org-aware resource access (v2.0.1 promise, finally wired in B4) ───────────
+
+async def assert_resource_access(
+    db,  # AsyncSession — kept loose to avoid the import cycle
+    resource,
+    user,
+    *,
+    min_role: str = "viewer",
+) -> Any:
+    """Return *resource* if the caller may access it, else raise 404.
+
+    Three legitimate access paths:
+      1. Direct owner: ``resource.user_id == user.id``.
+      2. Org member with sufficient role: ``resource.organization_id``
+         is set and the caller has a Membership in that org whose
+         role rank >= ``min_role``.
+      3. No access — 404 (never 403; OWASP DOR — never leak existence).
+
+    Async because the org-membership branch needs a DB lookup. Routes
+    that have never been multi-tenant (most of them today) keep
+    calling the synchronous ``assert_owner`` and don't pay this cost.
+    """
+    from sqlalchemy import select as _select
+
+    if resource is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Resource not found",
+        )
+
+    # Direct ownership — fast path.
+    if getattr(resource, "user_id", None) == user.id:
+        return resource
+
+    # Org membership — only when the resource has been assigned to an org
+    # (NULL during the v2.0.x rollout window; see migration 0006).
+    org_id = getattr(resource, "organization_id", None)
+    if org_id is not None:
+        from app.models.organization import Membership
+
+        result = await db.execute(
+            _select(Membership).where(
+                Membership.organization_id == org_id,
+                Membership.user_id == user.id,
+            )
+        )
+        m = result.scalar_one_or_none()
+        if m is not None and has_role(m.role, min_role):
+            return resource
+
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found"
+    )
