@@ -649,8 +649,20 @@ function ProjectStep({
   onNext,
   onBack,
   optional,
+  onAddProject,
+  onRemoveProject,
 }: ProjectStepProps) {
   const EMOJIS = ["✨", "🔧", "🎯"];
+
+  // UX-03: every project step is now skippable. The previous code
+  // marked the first project as mandatory (`optional={index > 0}`),
+  // which meant a user without a single project to share saw a
+  // disabled Continue button with no explanation, no skip option,
+  // and no "Add another" affordance — looked broken, blocked them
+  // at the ~50% mark. Pretty much every other step in this builder
+  // accepts an empty value gracefully; aligning Projects with that
+  // pattern.
+  const isSkippable = true;
 
   return (
     <StepShell
@@ -660,12 +672,17 @@ function ProjectStep({
       question={
         optional
           ? `Got another project to show off? (${label})`
-          : `What's your most impressive project?`
+          : `What's a project you'd like to feature?`
       }
-      hint={optional ? "Leave blank if you don't have a third project." : undefined}
+      hint={
+        optional
+          ? "Leave blank if you don't have another project."
+          : "Add one if you'd like — or skip and come back later."
+      }
       onNext={onNext}
       onBack={onBack}
-      nextDisabled={!optional && !data.name.trim()}
+      nextLabel={!data.name.trim() ? "Skip →" : "Continue →"}
+      nextDisabled={!isSkippable && !data.name.trim()}
     >
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
@@ -710,6 +727,32 @@ function ProjectStep({
             onChange={(tags) => onChangeTech(index, tags)}
             placeholder="e.g. Next.js, Postgres — press Enter after each"
           />
+        </div>
+
+        {/* UX-03: render the Add Another / Remove buttons that were
+            declared on the props interface but never actually drawn.
+            Matches the WorkExpStep pattern. */}
+        <div className="flex justify-between">
+          {onRemoveProject ? (
+            <button
+              type="button"
+              onClick={onRemoveProject}
+              className="text-sm text-red-500 hover:text-red-400"
+            >
+              Remove project
+            </button>
+          ) : (
+            <div />
+          )}
+          {onAddProject ? (
+            <button
+              type="button"
+              onClick={onAddProject}
+              className="text-sm text-[var(--pf-accent-text)] hover:text-[#a09cff]"
+            >
+              + Add another project
+            </button>
+          ) : null}
         </div>
       </div>
     </StepShell>
