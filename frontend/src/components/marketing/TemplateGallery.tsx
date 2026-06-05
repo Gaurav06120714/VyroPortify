@@ -171,7 +171,10 @@ export default function TemplateGallery() {
           <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[var(--pf-border-hover)] bg-[var(--pf-border-subtle)] px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-[var(--pf-accent)]">
             Templates
           </div>
-          <h2 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl">
+          {/* UX-02: was text-white — invisible on the light surface that
+              shipped in v1.7.2. Switched to the --pf-text token so it
+              follows the active palette. */}
+          <h2 className="text-h1 sm:text-display text-[var(--pf-text)]">
             Three themes
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-[var(--pf-muted)]">
