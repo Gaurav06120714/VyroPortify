@@ -319,23 +319,22 @@ async def remove_member(
     if m is None:
         raise HTTPException(status_code=404, detail="Membership not found")
     # Prevent removing the last owner — locks the user out of their own org.
+    # B3 fix: collapsed to a single COUNT(*). The original had a dead
+    # `owner_count = db.scalar(... with_only_columns(Membership.id))`
+    # whose result was thrown away, followed by a redundant full
+    # SELECT that pulled every owner row to .len() the list.
     if m.role == "owner":
+        from sqlalchemy import func as sql_func
+
         owner_count = await db.scalar(
-            select(Membership)
-            .where(Membership.organization_id == org_id, Membership.role == "owner")
-            .with_only_columns(Membership.id)
-        )
-        # Lightweight count using scalar — full count if multiple owners.
-        all_owners = await db.execute(
-            select(Membership).where(
+            select(sql_func.count(Membership.id)).where(
                 Membership.organization_id == org_id, Membership.role == "owner"
             )
         )
-        if len(all_owners.scalars().all()) <= 1:
+        if (owner_count or 0) <= 1:
             raise HTTPException(
                 status_code=400,
                 detail="Cannot remove the last owner — promote another member first.",
             )
-        del owner_count  # silence unused-name linter
     await db.delete(m)
     await db.commit()
