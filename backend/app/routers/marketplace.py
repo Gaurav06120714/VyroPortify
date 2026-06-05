@@ -210,13 +210,21 @@ async def submit_template(
     if existing is not None:
         raise HTTPException(status_code=409, detail="Template id already exists")
 
+    # B13/B21 fix: don't set is_pro=(price_cents > 0). is_pro means
+    # "requires a Pro subscription to use", which is a separate axis
+    # from "this template is paid". Community-submitted paid
+    # templates can be purchased à la carte regardless of the
+    # buyer's Pro status — gating on is_pro would force users to
+    # buy Pro AND pay for the template. Default new submissions to
+    # is_pro=False; only the moderator (or a future paid-feature
+    # field) can flip it.
     t = Template(
         id=body.id,
         name=body.name,
         description=body.description,
         category=body.category,
         preview_url=body.preview_url,
-        is_pro=body.price_cents > 0,
+        is_pro=False,
         price_cents=body.price_cents,
         config=body.config,
         author_user_id=current_user.id,
