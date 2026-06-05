@@ -33,9 +33,14 @@ logger = logging.getLogger(__name__)
 
 OPENROUTER_BASE = "https://openrouter.ai/api/v1/chat/completions"
 ANTHROPIC_BASE = "https://api.anthropic.com/v1/messages"
+GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
 
 FREE_MODEL = "google/gemma-4-31b-it:free"
 ANTHROPIC_MODEL = "claude-3-5-haiku-latest"
+# gemini-flash-lite-latest because gemini-2.0-flash is currently
+# zero-quota'd for new free-tier projects. Lite is plenty for resume
+# parsing and the only consistently-available free model.
+GEMINI_MODEL = "gemini-flash-lite-latest"
 
 AI_CACHE_TTL_SECONDS = 60 * 60 * 24
 _TIMEOUT_SECONDS = 60.0
@@ -76,6 +81,37 @@ def _call_anthropic(prompt: str, system: str, max_tokens: int) -> _Result:
     data = resp.json()
     text = "".join(block.get("text", "") for block in data.get("content", []))
     return _Result(text=text.strip(), provider="anthropic", model=ANTHROPIC_MODEL)
+
+
+def _call_gemini(prompt: str, system: str, max_tokens: int) -> _Result:
+    """Google Gemini (AI Studio free tier). API key passed as query param.
+
+    Shape differs from OpenAI:
+      - request:  {"contents": [{"parts": [{"text": "..."}]}],
+                   "systemInstruction": {"parts":[{"text":"..."}]}}
+      - response: data["candidates"][0]["content"]["parts"][i]["text"]
+    """
+    if not settings.GEMINI_API_KEY:
+        raise RuntimeError("gemini_not_configured")
+    payload: dict = {
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {"maxOutputTokens": max_tokens},
+    }
+    if system:
+        payload["systemInstruction"] = {"parts": [{"text": system}]}
+    url = f"{GEMINI_BASE}/{GEMINI_MODEL}:generateContent?key={settings.GEMINI_API_KEY}"
+    with httpx.Client(timeout=_TIMEOUT_SECONDS) as client:
+        resp = client.post(url, json=payload, headers={"content-type": "application/json"})
+    # 429 / 5xx → transient (let failover advance). 400 → re-raise.
+    if resp.status_code >= 500 or resp.status_code == 429:
+        raise RuntimeError(f"gemini_transient_{resp.status_code}")
+    resp.raise_for_status()
+    data = resp.json()
+    parts = data.get("candidates", [{}])[0].get("content", {}).get("parts", [])
+    text = "".join(p.get("text", "") for p in parts).strip()
+    if not text:
+        raise RuntimeError("gemini_empty_response")
+    return _Result(text=text, provider="gemini", model=GEMINI_MODEL)
 
 
 def _call_openrouter(prompt: str, system: str, model: str, max_tokens: int) -> _Result:
@@ -150,10 +186,15 @@ def call_ai(
             )
             return hit
 
+    # Provider order — try the cheapest/most-available first. Each
+    # function self-skips when its key is unset (raises *_not_configured),
+    # so the chain transparently degrades to whichever provider is
+    # actually credentialed.
     last_exc: Exception | None = None
     for attempt in (
-        lambda: _call_anthropic(prompt, system, max_tokens),
-        lambda: _call_openrouter(prompt, system, model, max_tokens),
+        lambda: _call_gemini(prompt, system, max_tokens),       # primary (free, no card)
+        lambda: _call_openrouter(prompt, system, model, max_tokens),  # fallback A (free tier)
+        lambda: _call_anthropic(prompt, system, max_tokens),    # fallback B (paid)
     ):
         try:
             result = attempt()

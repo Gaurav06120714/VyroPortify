@@ -49,6 +49,9 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
     ANTHROPIC_API_KEY: str = ""
     OPENROUTER_API_KEY: str = ""
+    # Google AI Studio (Gemini) — free tier, no credit card required.
+    # Promoted to primary provider in ai_client (v3 AI-01 ticket).
+    GEMINI_API_KEY: str = ""
 
     # ── Clerk (authentication) ────────────────────────────────────────────
     # Format: https://<your-clerk-subdomain>.clerk.accounts.dev/.well-known/jwks.json
