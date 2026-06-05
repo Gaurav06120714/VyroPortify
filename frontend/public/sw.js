@@ -52,11 +52,27 @@ self.addEventListener("fetch", (event) => {
   if (url.pathname.startsWith("/api/")) return;
 
   // HTML navigations: network-first, offline-shell on failure.
+  //
+  // B17 fix: if the precache somehow missed /offline.html (first
+  // install dropped mid-fetch, storage quota hit, etc.) caches.match
+  // resolves to `undefined` and respondWith(undefined) turns into a
+  // hard network error on the page. The fallback chain now ends in a
+  // hardcoded inline Response so the user always sees *something*
+  // instead of a broken page.
   if (request.mode === "navigate") {
     event.respondWith(
-      fetch(request).catch(() =>
-        caches.match(SHELL_URL, { ignoreSearch: true }),
-      ),
+      fetch(request).catch(async () => {
+        const cached = await caches.match(SHELL_URL, { ignoreSearch: true });
+        if (cached) return cached;
+        return new Response(
+          "<!doctype html><meta charset=utf-8><title>Offline</title>" +
+            "<style>body{font-family:system-ui;display:flex;align-items:center;" +
+            "justify-content:center;height:100dvh;margin:0;background:#fff;" +
+            "color:#0b1220;text-align:center;padding:1rem}</style>" +
+            "<div><h1>You're offline</h1><p>Reconnect and refresh.</p></div>",
+          { status: 503, headers: { "Content-Type": "text/html; charset=utf-8" } },
+        );
+      }),
     );
     return;
   }
