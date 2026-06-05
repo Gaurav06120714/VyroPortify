@@ -309,10 +309,13 @@ async def stripe_webhook(
         sub_status = sub.get("status")
 
         if customer_id and sub_status in ("active", "trialing"):
-            # Re-confirm pro (handles reactivation after cancel)
+            # Re-confirm pro (handles reactivation after cancel).
+            # B10: also mirror onto the org so re-activated subs restore
+            # team access, not just the individual paying user.
             user = await _get_user_by_customer(db, customer_id)
             if user and user.plan != Plan.PRO:
                 user.plan = Plan.PRO
+                await _sync_org_billing(db, user, plan=Plan.PRO)
                 logger.info("Re-activated pro for customer %s", customer_id)
 
         elif customer_id and sub_status in ("canceled", "unpaid", "past_due"):
@@ -344,6 +347,59 @@ async def _get_user_by_customer(db: DB, customer_id: str) -> User | None:
     return result.scalar_one_or_none()
 
 
+# B10 fix: keep Organization rows in lockstep with User billing state.
+# Before v2.0 the User was the billing entity; after v2.0 the
+# Organization owns the subscription. The webhook had not been updated
+# yet, so cancellations downgraded the paying user but every other
+# member of their org kept Pro access via Organization.plan = "pro".
+#
+# Strategy: every helper that mutates User billing state also resolves
+# the user's primary org (via membership), mirrors plan / stripe_* on
+# the org row, and logs both writes. The Membership lookup picks the
+# first org the user belongs to — for personal orgs that's a 1:1
+# mapping; for team orgs the owner's personal org gets billed.
+
+async def _get_org_for_user(db: DB, user_id) -> "Organization | None":  # noqa: F821
+    from sqlalchemy import select as _select
+
+    from app.models.organization import Membership, Organization
+
+    result = await db.execute(
+        _select(Organization)
+        .join(Membership, Membership.organization_id == Organization.id)
+        .where(Membership.user_id == user_id)
+        .order_by(Organization.is_personal.desc(), Organization.created_at.asc())
+        .limit(1)
+    )
+    return result.scalar_one_or_none()
+
+
+async def _sync_org_billing(
+    db: DB,
+    user,
+    *,
+    plan: str | None = None,
+    customer_id: str | None = None,
+    subscription_id: str | None | bool = False,  # False = no-op, None = clear
+) -> None:
+    """Mirror billing fields onto the user's primary org.
+
+    `subscription_id`: False = leave unchanged, None = clear, str = set.
+    Tri-state because the webhook needs to clear the field on cancellation
+    but leave it alone on a simple renewal.
+    """
+    org = await _get_org_for_user(db, user.id)
+    if not org:
+        return
+    if plan is not None:
+        org.plan = plan.value if isinstance(plan, Plan) else plan
+    if customer_id and not org.stripe_customer_id:
+        org.stripe_customer_id = customer_id
+    if subscription_id is not False:
+        org.stripe_subscription_id = subscription_id
+    logger.info("org_billing_synced org=%s plan=%s", org.id, org.plan)
+
+
 async def _upgrade_user(
     db: DB,
     user_id: str,
@@ -362,6 +418,9 @@ async def _upgrade_user(
     if subscription_id:
         user.stripe_subscription_id = subscription_id
 
+    await _sync_org_billing(
+        db, user, plan=plan, customer_id=customer_id, subscription_id=subscription_id,
+    )
     logger.info("Upgraded user %s to %s", user_id, plan)
     return user
 
@@ -382,6 +441,9 @@ async def _renew_user(
     if period_end:
         user.plan_expires_at = datetime.fromtimestamp(period_end, tz=UTC)
 
+    await _sync_org_billing(
+        db, user, plan=Plan.PRO, subscription_id=subscription_id,
+    )
     logger.info("Renewed pro for customer %s until %s", customer_id, period_end)
 
 
@@ -393,4 +455,8 @@ async def _downgrade_user(db: DB, customer_id: str) -> None:
     user.plan = Plan.FREE
     user.stripe_subscription_id = None
     user.plan_expires_at = None
+
+    # Tri-state: pass None to actively clear the org's subscription_id —
+    # otherwise we'd leave a dangling reference to a cancelled Stripe sub.
+    await _sync_org_billing(db, user, plan=Plan.FREE, subscription_id=None)
     logger.info("Downgraded customer %s to free", customer_id)
