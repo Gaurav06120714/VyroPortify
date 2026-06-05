@@ -75,18 +75,28 @@ export function useDebouncedSave<T>(
     await doSave();
   }, [doSave]);
 
+  // B23 fix: route flush through a ref so the "flush on unmount" and
+  // "flush on tab hidden" effects don't re-fire every time `save`
+  // changes identity. The previous version put `flush` in the
+  // dependency list, which meant the cleanup ran on every render
+  // that re-created doSave — silent duplicate saves.
+  const flushRef = useRef(flush);
+  useEffect(() => {
+    flushRef.current = flush;
+  }, [flush]);
+
   // Flush on tab hidden — if the user switches away mid-debounce we don't
-  // want their last edits to disappear.
+  // want their last edits to disappear. Empty deps: mount-only.
   useEffect(() => {
     const onVis = () => {
-      if (document.visibilityState === "hidden") void flush();
+      if (document.visibilityState === "hidden") void flushRef.current();
     };
     document.addEventListener("visibilitychange", onVis);
     return () => document.removeEventListener("visibilitychange", onVis);
-  }, [flush]);
+  }, []);
 
-  // Flush on unmount.
-  useEffect(() => () => void flush(), [flush]);
+  // Flush on unmount — fires exactly once when the component unmounts.
+  useEffect(() => () => void flushRef.current(), []);
 
   return { status, lastSavedAt, errorMessage, queue, flush };
 }
