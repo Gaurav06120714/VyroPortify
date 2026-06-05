@@ -45,7 +45,8 @@ async def onboard(current_user: CurrentUser, db: DB) -> OnboardResponse:
 
     stripe.api_key = settings.STRIPE_SECRET_KEY
 
-    account_id = getattr(current_user, "stripe_account_id", None)
+    # B25: column is guaranteed by alembic 0011 — direct attribute access.
+    account_id = current_user.stripe_account_id
     if not account_id:
         # Express account: hosted onboarding, light KYC, fastest path
         # for individual authors. Country defaulted to US — extend via
@@ -77,7 +78,8 @@ async def onboard(current_user: CurrentUser, db: DB) -> OnboardResponse:
 async def connect_status(current_user: CurrentUser) -> dict:
     if not settings.STRIPE_SECRET_KEY:
         return {"configured": False}
-    account_id = getattr(current_user, "stripe_account_id", None)
+    # B25: column is guaranteed by alembic 0011 — direct attribute access.
+    account_id = current_user.stripe_account_id
     if not account_id:
         return {"configured": False, "account_id": None}
 
