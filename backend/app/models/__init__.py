@@ -8,6 +8,7 @@ from app.models.resume import Resume
 from app.models.resume_export import ResumeExport
 from app.models.template import Template, TemplateReview
 from app.models.user import User
+from app.models.webhook import WebhookDelivery, WebhookEndpoint
 
 __all__ = [
     "User",
@@ -22,4 +23,6 @@ __all__ = [
     "AuditEvent",
     "PortfolioView",
     "ResumeExport",
+    "WebhookEndpoint",
+    "WebhookDelivery",
 ]
