@@ -179,6 +179,7 @@ def _render_with_reportlab(payload: ResumePayload) -> bytes:
     # Imported lazily so the dep is optional for environments that
     # never hit the fallback (e.g. workers that always have tectonic).
     from io import BytesIO
+    from xml.sax.saxutils import escape as _xml_escape
 
     from reportlab.lib.colors import HexColor, black
     from reportlab.lib.enums import TA_LEFT
@@ -191,6 +192,14 @@ def _render_with_reportlab(payload: ResumePayload) -> bytes:
         SimpleDocTemplate,
         Spacer,
     )
+
+    # B9 fix: ReportLab's Paragraph treats its first arg as a mini-XML
+    # fragment. A user with `&`, `<`, or `>` in their name (Smith &
+    # Co, "Jean-François <Lead>") would crash the parser or render as
+    # broken markup. Wrap every user-supplied string before f-stringing
+    # it into a Paragraph.
+    def _x(s: Any) -> str:
+        return _xml_escape("" if s is None else str(s))
 
     buf = BytesIO()
     doc = SimpleDocTemplate(
@@ -219,39 +228,41 @@ def _render_with_reportlab(payload: ResumePayload) -> bytes:
     name = payload.personal.get("full_name", "")
     title = payload.personal.get("title", "")
     if name:
-        story.append(Paragraph(f"<b>{name}</b>", h1))
+        story.append(Paragraph(f"<b>{_x(name)}</b>", h1))
     if title:
-        story.append(Paragraph(title, muted))
+        story.append(Paragraph(_x(title), muted))
     contact_bits = [
         payload.personal.get("email"),
         payload.personal.get("phone"),
         payload.personal.get("location"),
     ]
-    contact_line = " · ".join(b for b in contact_bits if b)
+    contact_line = " · ".join(_x(b) for b in contact_bits if b)
     if contact_line:
         story.append(Paragraph(contact_line, muted))
     story.append(Spacer(1, 8))
 
     def section(title: str) -> None:
+        # Section headings are hardcoded strings ("Experience", "Skills"
+        # etc.) — no user input, no escape needed.
         story.append(Paragraph(title.upper(), h2))
 
     if payload.summary:
         section("Summary")
-        story.append(Paragraph(payload.summary, body))
+        story.append(Paragraph(_x(payload.summary), body))
 
     if payload.experience:
         section("Experience")
         for job in payload.experience:
-            role = job.get("role", "")
-            company = job.get("company", "")
-            start = job.get("start", "")
-            end = job.get("end") or "Present"
+            role = _x(job.get("role", ""))
+            company = _x(job.get("company", ""))
+            start = _x(job.get("start", ""))
+            end = _x(job.get("end") or "Present")
             story.append(
                 Paragraph(f"<b>{role}</b> · {company} · {start} – {end}", body)
             )
             bullets = job.get("bullets") or []
             if bullets:
-                items = [ListItem(Paragraph(b, body)) for b in bullets]
+                items = [ListItem(Paragraph(_x(b), body)) for b in bullets]
                 story.append(ListFlowable(items, bulletType="bullet", leftIndent=14))
             story.append(Spacer(1, 6))
 
@@ -260,32 +271,33 @@ def _render_with_reportlab(payload: ResumePayload) -> bytes:
         for ed in payload.education:
             story.append(
                 Paragraph(
-                    f"<b>{ed.get('degree', '')}</b> · {ed.get('institution', '')}"
-                    f" · {ed.get('year', '')}",
+                    f"<b>{_x(ed.get('degree', ''))}</b> · "
+                    f"{_x(ed.get('institution', ''))} · "
+                    f"{_x(ed.get('year', ''))}",
                     body,
                 )
             )
 
     if payload.skills:
         section("Skills")
-        story.append(Paragraph(" · ".join(payload.skills), body))
+        story.append(Paragraph(" · ".join(_x(s) for s in payload.skills), body))
 
     if payload.projects:
         section("Projects")
         for p in payload.projects:
-            line = f"<b>{p.get('name', '')}</b>"
+            line = f"<b>{_x(p.get('name', ''))}</b>"
             if p.get("description"):
-                line += f" — {p['description']}"
+                line += f" — {_x(p['description'])}"
             story.append(Paragraph(line, body))
 
     if payload.certifications:
         section("Certifications")
-        items = [ListItem(Paragraph(c, body)) for c in payload.certifications]
+        items = [ListItem(Paragraph(_x(c), body)) for c in payload.certifications]
         story.append(ListFlowable(items, bulletType="bullet", leftIndent=14))
 
     if payload.achievements:
         section("Achievements")
-        items = [ListItem(Paragraph(a, body)) for a in payload.achievements]
+        items = [ListItem(Paragraph(_x(a), body)) for a in payload.achievements]
         story.append(ListFlowable(items, bulletType="bullet", leftIndent=14))
 
     doc.build(story)
