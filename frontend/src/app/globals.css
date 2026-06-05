@@ -72,6 +72,16 @@
   --pf-sidebar-text: #e0e0f0;
   --pf-sidebar-muted: #9090bb;
 
+  /* B19 fix: Aurora needs a defined --pf-cta-warm too. The Hero uses
+   * bg-[var(--pf-cta-warm, var(--pf-accent))] but Tailwind/JIT
+   * arbitrary-value syntax doesn't always honor CSS var fallbacks
+   * inside the comma list — so an undefined --pf-cta-warm yielded
+   * an unstyled background instead of falling through to --pf-accent.
+   * Defining it here mirrors the accent so the Hero CTA stays
+   * on-brand under Aurora. Clarity overrides this with #f59e0b. */
+  --pf-cta-warm:        var(--pf-accent);
+  --pf-cta-warm-hover:  var(--pf-accent-hover);
+
   /* Premium Light Palette: Crisp Slate & Electric Indigo */
   --background: #f8fafc;
   --foreground: #0f172a;
@@ -342,39 +352,50 @@ body {
  * 4.86:1 (AA for normal text, AAA for large).
  */
 [data-palette="clarity"] {
-  --pf-bg:              #ffffff;
-  --pf-surface:         #fafbfc;
-  --pf-surface2:        #f1f5f9;       /* slate-100 */
-  --pf-text:            #0f172a;       /* slate-900 */
-  --pf-text-dim:        #334155;       /* slate-700 */
-  --pf-muted:           #64748b;       /* slate-500 */
-  --pf-muted-dim:       #94a3b8;       /* slate-400 */
-  --pf-muted-darker:    #cbd5e1;       /* slate-300 */
-  --pf-muted-darkest:   #e2e8f0;       /* slate-200 */
+  /* UX-05: surfaces deepened a notch (#fcfcfd → #fafbfc → #eef2f6) so
+   * cards sit above the page instead of disappearing into it; muted
+   * tones bumped one step toward the foreground for AA contrast on
+   * captions and helper text. */
+  --pf-bg:              #fcfcfd;
+  --pf-surface:         #ffffff;
+  --pf-surface2:        #eef2f6;       /* slate-100 + ~3% indigo wash */
+  --pf-text:            #0b1220;       /* near-black for AAA on white */
+  --pf-text-dim:        #1f2937;       /* slate-800 */
+  --pf-muted:           #475569;       /* slate-600 — AA on white (7.2:1) */
+  --pf-muted-dim:       #64748b;       /* slate-500 */
+  --pf-muted-darker:    #94a3b8;       /* slate-400 */
+  --pf-muted-darkest:   #cbd5e1;       /* slate-300 */
 
-  --pf-accent:          #2563eb;       /* blue-600 */
-  --pf-accent-hover:    #1d4ed8;       /* blue-700 */
-  --pf-accent-text:     #1d4ed8;
-  --pf-accent-subtle:   rgba(37,99,235,0.08);
-  --pf-accent-soft:     rgba(37,99,235,0.12);
+  /* Indigo-tilted blue for richer accent — 4.95:1 on white (AA normal,
+   * AAA large). Hover row drops a step for tactile feedback. */
+  --pf-accent:          #4f46e5;       /* indigo-600 */
+  --pf-accent-hover:    #4338ca;       /* indigo-700 */
+  --pf-accent-text:     #4338ca;
+  --pf-accent-subtle:   rgba(79,70,229,0.08);
+  --pf-accent-soft:     rgba(79,70,229,0.14);
+
+  /* Warm CTA — amber pairs richer with indigo than with cobalt. */
   --pf-cta-warm:        #f59e0b;       /* amber-500 */
   --pf-cta-warm-hover:  #d97706;       /* amber-600 */
 
-  --pf-border:          rgba(15,23,42,0.10);
-  --pf-border-dim:      rgba(15,23,42,0.06);
-  --pf-border-subtle:   rgba(15,23,42,0.04);
-  --pf-border-light:    rgba(15,23,42,0.08);
-  --pf-border-medium:   rgba(15,23,42,0.14);
-  --pf-border-hover:    rgba(37,99,235,0.30);
+  /* Borders carry a faint indigo cast so cards feel related to the
+   * accent instead of grey-on-grey. */
+  --pf-border:          rgba(79,70,229,0.16);
+  --pf-border-dim:      rgba(79,70,229,0.08);
+  --pf-border-subtle:   rgba(15,23,42,0.06);
+  --pf-border-light:    rgba(79,70,229,0.10);
+  --pf-border-medium:   rgba(79,70,229,0.20);
+  --pf-border-hover:    rgba(79,70,229,0.45);
   --pf-border-faint:    rgba(15,23,42,0.03);
 
-  /* Cleaner elevations — no glow, just subtle drop shadow */
-  --pf-elev-1: 0 1px 2px rgba(15,23,42,0.04);
-  --pf-elev-2: 0 4px 12px rgba(15,23,42,0.06);
-  --pf-elev-3: 0 12px 24px rgba(15,23,42,0.08);
-  --pf-elev-4: 0 24px 48px rgba(15,23,42,0.12);
+  /* Elevations layered higher contrast so cards lift cleanly even on a
+   * near-white background. */
+  --pf-elev-1: 0 1px 2px rgba(15,23,42,0.05), 0 1px 1px rgba(15,23,42,0.03);
+  --pf-elev-2: 0 4px 12px rgba(15,23,42,0.07), 0 1px 3px rgba(15,23,42,0.04);
+  --pf-elev-3: 0 12px 28px rgba(15,23,42,0.10), 0 4px 8px rgba(15,23,42,0.05);
+  --pf-elev-4: 0 28px 56px rgba(15,23,42,0.16), 0 12px 24px rgba(15,23,42,0.08);
 
-  --pf-sidebar:        #0f172a;        /* dark sidebar contrasts against white body */
+  --pf-sidebar:        #0b1220;
   --pf-sidebar-text:   #e2e8f0;
   --pf-sidebar-muted:  #94a3b8;
 }
