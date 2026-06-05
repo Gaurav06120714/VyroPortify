@@ -17,6 +17,10 @@ const isMac =
   typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
 
 function matches(e: KeyboardEvent, s: Shortcut): boolean {
+  // Clerk's hosted SignIn/SignUp components dispatch synthetic key events
+  // without `e.key` set (autofill, browser autocomplete on iOS). Guard
+  // against that — without `key` the shortcut can't match anyway.
+  if (!e.key || typeof e.key !== "string") return false;
   if (e.key.toLowerCase() !== s.key.toLowerCase()) return false;
   const mod = isMac ? e.metaKey : e.ctrlKey;
   if (s.mod !== undefined && mod !== s.mod) return false;
