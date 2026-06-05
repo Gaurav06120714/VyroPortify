@@ -5,7 +5,7 @@ import { useAuth } from "@clerk/nextjs";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { Sparkles, Copy, Check, RefreshCw, FileText } from "lucide-react";
-import { generateCoverLetter } from "@/lib/api";
+import { generateCoverLetter, ApiError } from "@/lib/api";
 
 const TONE_OPTIONS = [
   { value: "professional", label: "Professional", desc: "Polished & formal" },
@@ -40,8 +40,21 @@ export default function CoverLetterPage() {
       const res = await generateCoverLetter({ name, title, company, role, highlights, tone }, token);
       setLetter(res.cover_letter);
       toast.success("Cover letter generated!");
-    } catch {
-      toast.error("Generation failed. Please try again.");
+    } catch (err) {
+      // UX-06: surface the real reason instead of a generic toast.
+      // PLAN_LIMIT_EXCEEDED is the most common 403 here (cover letter
+      // is Pro-gated); the backend returns the structured error from
+      // PortifyBaseException so we can read .detail directly.
+      if (err instanceof ApiError && err.status === 403) {
+        toast.error("Cover letter requires the Pro plan.", {
+          description: "Upgrade in Settings → Billing to use AI cover letters.",
+          duration: 7000,
+        });
+      } else if (err instanceof ApiError) {
+        toast.error(err.detail || "Generation failed. Please try again.");
+      } else {
+        toast.error("Generation failed. Please try again.");
+      }
     } finally {
       setLoading(false);
     }

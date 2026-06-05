@@ -131,8 +131,20 @@ export default function BuildResumePage() {
       } else {
         toast.info("No new suggestions — your list looks great!");
       }
-    } catch {
-      toast.error("Couldn't fetch suggestions. Check your connection.");
+    } catch (err) {
+      // UX-06: suggest-skills is Pro-gated server-side, so a free
+      // user gets 403 PLAN_LIMIT_EXCEEDED. Generic "check your
+      // connection" copy is misleading.
+      if (err instanceof ApiError && err.status === 403) {
+        toast.error("AI skill suggestions require the Pro plan.", {
+          description: "Upgrade in Settings → Billing to unlock.",
+          duration: 7000,
+        });
+      } else if (err instanceof ApiError) {
+        toast.error(err.detail || "Couldn't fetch suggestions.");
+      } else {
+        toast.error("Couldn't fetch suggestions. Check your connection.");
+      }
     } finally {
       setSuggestingSkills(false);
     }
