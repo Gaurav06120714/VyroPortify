@@ -24,8 +24,16 @@ celery_app = Celery(
     include=[
         "app.workers.tasks.parse_resume",
         "app.workers.tasks.generate_portfolio",
+        # v1.2.0 transactional email + v2.3 PDF export — added late
+        # and easy to miss; without these the worker registers the
+        # task name but never imports its handler, so .delay() succeeds
+        # but the message sits in the queue forever.
+        "app.workers.tasks.send_email",
+        "app.workers.tasks.export_resume_pdf",
     ],
 )
+
+import os
 
 celery_app.conf.update(
     # ── Serialization (security-critical) ─────────────────────────────────────
@@ -47,4 +55,14 @@ celery_app.conf.update(
     task_acks_late=True,          # ack only after task completes (safer on crash)
     worker_prefetch_multiplier=1, # one task at a time per worker slot
     result_expires=3600,
+
+    # ── Eager mode (UX-04 dev escape hatch) ──────────────────────────────────
+    # Set CELERY_TASK_ALWAYS_EAGER=1 to run tasks inline in the API process
+    # — useful when a Celery worker isn't running locally. Without this, a
+    # POST /portfolio/generate enqueues a task and the page redirects to the
+    # /generating poll loop forever because nothing is dequeuing. The flip
+    # side: requests now block until the task finishes (~5–15s for portfolio
+    # generation). Leave OFF in production; the worker process owns this.
+    task_always_eager=os.getenv("CELERY_TASK_ALWAYS_EAGER", "0") == "1",
+    task_eager_propagates=True,
 )
