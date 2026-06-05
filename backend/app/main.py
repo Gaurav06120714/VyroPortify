@@ -123,6 +123,45 @@ async def enforce_request_size_limit(request: Request, call_next):
     return await call_next(request)
 
 
+# ── DDoS hardening middleware (v3.3.1) ─────────────────────────────────────────
+# Cheap drops at the edge: no User-Agent, obvious scanner paths, etc.
+# Doesn't replace Cloudflare/WAF — runs *in addition* so the API stays safe
+# when the CDN is bypassed (direct IP, wrong DNS, internal traffic).
+
+_SUSPICIOUS_PATH_TOKENS = (
+    "/wp-admin", "/wp-login", "/xmlrpc.php", "/.env", "/.git/",
+    "/phpmyadmin", "/.aws/", "/.ssh/", "/etc/passwd",
+)
+
+
+@app.middleware("http")
+async def ddos_hardening(request: Request, call_next):
+    path = request.url.path
+    # 1. Drop common scanner probes before any handler is invoked.
+    low = path.lower()
+    if any(tok in low for tok in _SUSPICIOUS_PATH_TOKENS):
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"detail": "Not Found"})
+
+    # 2. Require a User-Agent on POST/PUT/PATCH/DELETE — curl includes one by
+    #    default; botnets often omit it. GET stays permissive (legitimate
+    #    crawlers, health checks).
+    if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
+        ua = request.headers.get("user-agent", "").strip()
+        if not ua or len(ua) < 3:
+            return JSONResponse(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                content={"detail": "Missing or invalid User-Agent header."},
+            )
+
+    response = await call_next(request)
+
+    # 3. Long-lived edge cache on public portfolio HTML so a Cloudflare/CDN
+    #    in front absorbs view spikes without origin hits.
+    if path.startswith("/api/v1/portfolio/p/") or path.startswith("/portfolio/p/"):
+        response.headers.setdefault("Cache-Control", "public, max-age=300, s-maxage=900")
+    return response
+
+
 # ── Security headers middleware ────────────────────────────────────────────────
 # These headers are a defense-in-depth measure. Even though the Next.js frontend
 # also sets headers, the API backend must set them too because:
