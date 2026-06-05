@@ -282,13 +282,24 @@ async def get_public_portfolio(request: Request, slug: str, db: DB) -> Portfolio
     # Increment view counter (best-effort, async) + insert a PortfolioView
     # row for per-visitor analytics. Session token is SHA-256(ip + UA + day)
     # so the same visitor on the same day collapses, no PII stored.
+    #
+    # B16 fix: increment via UPDATE … SET views = views + 1 instead of
+    # read-modify-write on the ORM instance. Two concurrent requests
+    # would both read N, both write N+1 → undercount by 1 per race.
+    # Atomic SQL increment is collision-free.
     try:
         import hashlib
         from datetime import date
 
+        from sqlalchemy import update
+
         from app.models.portfolio_view import PortfolioView
 
-        p.views = (p.views or 0) + 1
+        await db.execute(
+            update(Portfolio)
+            .where(Portfolio.id == p.id)
+            .values(views=Portfolio.views + 1)
+        )
 
         client_ip = request.client.host if request.client else "unknown"
         ua = request.headers.get("user-agent", "")
