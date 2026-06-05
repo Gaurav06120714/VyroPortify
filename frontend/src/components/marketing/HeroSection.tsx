@@ -19,10 +19,10 @@ export default function HeroSection() {
         <h1 className="text-display sm:text-display-lg text-[var(--pf-text)]">
           Turn your resume into{" "}
           <br />
-          <span className="relative inline-block">
-            a portfolio that gets you hired
-            <span className="absolute -bottom-1 left-0 h-[3px] w-full rounded-full bg-[var(--pf-accent)]" />
-          </span>
+          {/* UX-01: removed the violet underline below the hero phrase —
+              read as a heavy form-input cursor on the white surface and
+              fought with the headline's tight tracking. */}
+          <span className="inline-block">a portfolio that gets you hired</span>
         </h1>
 
         {/* Sub */}
