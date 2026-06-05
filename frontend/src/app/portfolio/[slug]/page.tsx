@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://vyroportify.com";
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8001/api/v1";
 
 interface PortfolioData {
   id: string;
