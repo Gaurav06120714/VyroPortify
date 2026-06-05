@@ -30,17 +30,20 @@ if _db_url.startswith("postgres://"):
 elif _db_url.startswith("postgresql://") and "+asyncpg" not in _db_url:
     _db_url = _db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
 
-engine = create_async_engine(
-    _db_url,
-    echo=settings.DB_ECHO_SQL,
-    pool_size=settings.DB_POOL_SIZE,       # base persistent connections (default: 5)
-    max_overflow=settings.DB_MAX_OVERFLOW, # burst connections above pool_size (default: 10)
-    pool_timeout=30,                        # seconds to wait for a connection before raising
-    # Recycle connections every 30 min to avoid stale connections from TCP keepalive issues
-    pool_recycle=1800,
-    # Validate connections before handing them out from the pool (catches dropped conns)
-    pool_pre_ping=True,
-)
+# Pool kwargs only apply to real connection pools (postgres). SQLite under
+# StaticPool — used by the test suite — raises TypeError on these kwargs,
+# so we omit them and let SQLAlchemy pick the right defaults.
+_engine_kwargs: dict = {"echo": settings.DB_ECHO_SQL}
+if not _db_url.startswith("sqlite"):
+    _engine_kwargs.update(
+        pool_size=settings.DB_POOL_SIZE,        # base persistent connections (default: 5)
+        max_overflow=settings.DB_MAX_OVERFLOW,  # burst connections above pool_size (default: 10)
+        pool_timeout=30,                         # seconds to wait for a connection before raising
+        pool_recycle=1800,                       # recycle every 30 min to avoid stale conns
+        pool_pre_ping=True,                      # validate before checkout
+    )
+
+engine = create_async_engine(_db_url, **_engine_kwargs)
 
 # ── Session factory ────────────────────────────────────────────────────────────
 AsyncSessionLocal = async_sessionmaker(
