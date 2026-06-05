@@ -64,17 +64,27 @@ export function OnboardingChecklist() {
     }
   }
 
-  if (dismissed) return null;
   const allDone = ITEMS.every((i) => completed.has(i.id));
-  if (allDone) {
-    // Auto-dismiss when complete — but only after a refresh, so the user
-    // sees the win first.
-    if (typeof window !== "undefined") {
+
+  // B6 fix: auto-dismiss must happen in an effect, not during render.
+  // React 18 strict mode double-invokes renders → double-writes to
+  // localStorage, and worse, the old code never called setDismissed()
+  // so the checklist kept showing with every item checked even after
+  // the storage flag was set. Now: when all items are complete, the
+  // effect fires once, writes the flag, and flips state — the UI
+  // disappears on the same tick.
+  useEffect(() => {
+    if (allDone && !dismissed) {
       try {
         localStorage.setItem(STORAGE_KEY, "__dismissed__");
-      } catch {}
+      } catch {
+        /* ignore */
+      }
+      setDismissed(true);
     }
-  }
+  }, [allDone, dismissed]);
+
+  if (dismissed) return null;
 
   return (
     <div
