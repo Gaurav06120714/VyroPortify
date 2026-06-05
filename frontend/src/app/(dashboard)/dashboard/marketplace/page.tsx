@@ -134,7 +134,9 @@ export default function MarketplacePage() {
                   </p>
                 )}
                 <div className="mt-3 flex items-center gap-3 text-xs text-[var(--pf-muted)]">
-                  <Rating value={Number(t.rating_average)} count={t.rating_count} />
+                  {/* B20: backend now serializes rating_average as a JSON
+                      number, so Number(...) is redundant. */}
+                  <Rating value={t.rating_average} count={t.rating_count} />
                   <span>·</span>
                   <span>{t.downloads_count.toLocaleString()} uses</span>
                   {t.category && (

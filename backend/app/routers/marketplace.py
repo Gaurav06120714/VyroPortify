@@ -60,6 +60,12 @@ class ModerateAction(BaseModel):
 
 
 class TemplateOut(BaseModel):
+    # B20 fix: serialize rating_average as a JSON number (float) not a
+    # Decimal/string. Pydantic v2 emits Decimal as a string by default,
+    # which forced every frontend consumer to Number(t.rating_average).
+    # arbitrary_types_allowed=False (default) combined with the float
+    # annotation triggers Pydantic's automatic Decimal → float coercion
+    # for ORM-attribute reads.
     model_config = ConfigDict(from_attributes=True)
 
     id: str
@@ -72,7 +78,7 @@ class TemplateOut(BaseModel):
     status: str
     author_user_id: uuid.UUID | None
     downloads_count: int
-    rating_average: Decimal
+    rating_average: float
     rating_count: int
 
 
