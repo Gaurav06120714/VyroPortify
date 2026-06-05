@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter, useParams } from "next/navigation";
+import { useAuth } from "@clerk/nextjs";
 import {
   Eye,
   PenLine,
@@ -11,6 +12,8 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8001/api/v1";
 
 // v1.7.3 — Unified Builder shell
 // Splits the page into Edit (left) and Live Preview (right). The edit form
@@ -44,12 +47,46 @@ export default function BuilderPage() {
     router.replace(`?${sp.toString()}`, { scroll: false });
   }
 
-  // We render the preview by pointing the iframe at the public portfolio
-  // route. If the portfolio hasn't been published yet the iframe will
-  // 404 — that's the cue for the "publish first" empty state below.
+  // B5 fix: the public viewer is keyed by SLUG, not UUID
+  // (GET /portfolio/p/{slug}). The old code passed the portfolio
+  // UUID into that URL → guaranteed 404. We now fetch the status
+  // endpoint, read the slug, and build the iframe URL from that.
+  const { getToken } = useAuth();
+  const [previewSlug, setPreviewSlug] = useState<string | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (portfolioId === "new") {
+      setPreviewSlug(null);
+      return;
+    }
+    let alive = true;
+    (async () => {
+      try {
+        const token = await getToken();
+        if (!token) return;
+        const res = await fetch(
+          `${API_URL}/portfolio/${portfolioId}/status`,
+          { headers: { Authorization: `Bearer ${token}` } },
+        );
+        if (!res.ok) {
+          if (alive) setPreviewError("Portfolio not found");
+          return;
+        }
+        const data = (await res.json()) as { slug?: string };
+        if (alive && data.slug) setPreviewSlug(data.slug);
+      } catch (e) {
+        if (alive) setPreviewError(e instanceof Error ? e.message : String(e));
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [portfolioId, getToken]);
+
   const previewUrl = useMemo(
-    () => (portfolioId === "new" ? null : `${SITE_URL}/portfolio/p/${portfolioId}`),
-    [portfolioId],
+    () => (previewSlug ? `${SITE_URL}/portfolio/p/${previewSlug}` : null),
+    [previewSlug],
   );
 
   return (
