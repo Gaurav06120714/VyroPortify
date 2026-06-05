@@ -12,7 +12,7 @@ from alembic import op
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 
 revision: str = "0014_api_keys"
-down_revision: str | None = "0013_seed_builtin_templates"
+down_revision = ("0013_seed_builtin_templates", "0013_backfill_repair")  # merge heads
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

@@ -27,12 +27,14 @@ from app.core.security_config import security_settings
 from app.core.sentry import init_sentry
 from app.core.telemetry import init_otel
 from app.routers import (
+    api_keys,
     auth,
     billing,
     connect,
     marketplace,
     organization,
     portfolio,
+    public_api,
     resume,
 )
 
@@ -285,6 +287,8 @@ app.include_router(billing.router,      prefix=settings.API_V1_PREFIX)
 app.include_router(organization.router, prefix=settings.API_V1_PREFIX)
 app.include_router(marketplace.router,  prefix=settings.API_V1_PREFIX)
 app.include_router(connect.router,      prefix=settings.API_V1_PREFIX)
+app.include_router(api_keys.router,     prefix=settings.API_V1_PREFIX)
+app.include_router(public_api.router,   prefix=settings.API_V1_PREFIX)
 
 
 # ── Health checks ──────────────────────────────────────────────────────────────
