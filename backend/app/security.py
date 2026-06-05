@@ -165,7 +165,11 @@ async def get_current_user(
         # and new accounts.
         from app.models.organization import Membership, Organization
 
-        org_name = (name or (email.split("@")[0] if email else "Workspace")) + "'s Workspace"
+        # B27: typographic apostrophe (’ U+2019) for the workspace name.
+        # Matches the UI convention and avoids the awkward "Workspace's
+        # Workspace" doubling when name is falsy.
+        owner_label = name or (email.split("@")[0] if email else None)
+        org_name = f"{owner_label}’s Workspace" if owner_label else "Personal Workspace"
         org = Organization(
             name=org_name,
             slug=f"personal-{str(user.id)[:8]}",

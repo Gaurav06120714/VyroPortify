@@ -60,8 +60,13 @@ def upgrade() -> None:
                 SELECT
                     gen_random_uuid()                                   AS org_id,
                     u.id                                                AS user_id,
+                    -- B27: typographic apostrophe (’) for consistency with
+                    -- the live signup path in app/security.py. The SQL
+                    -- literal escapes a single quote as '' inside another
+                    -- '' — that's only needed for ASCII '; the U+2019
+                    -- character below passes through Postgres unchanged.
                     COALESCE(NULLIF(u.name, ''), split_part(u.email, '@', 1))
-                        || '''s Workspace'                              AS name,
+                        || '’s Workspace'                               AS name,
                     'personal-' || substr(u.id::text, 1, 8)             AS slug,
                     u.stripe_customer_id                                AS stripe_customer_id,
                     u.stripe_subscription_id                            AS stripe_subscription_id,
