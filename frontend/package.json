@@ -37,6 +37,10 @@
     "tailwind-merge": "^2.0.0",
     "zod": "^4.4.3"
   },
+  "// overrides": "B24: pin import-in-the-middle to a single version. Two transitive dependents (@fastify/otel, @prisma/instrumentation) shipped different nested copies, which Next 15's serverExternalPackages auto-list detected and emitted a warning on every compile — twice per request route. Forcing a single 3.x version across the tree collapses both copies and silences the warning. Safe because 3.x is API-compatible with the 2.x branch the older packages bundled.",
+  "overrides": {
+    "import-in-the-middle": "^3.0.1"
+  },
   "devDependencies": {
     "@eslint/eslintrc": "^3.0.0",
     "@playwright/test": "^1.59.1",
