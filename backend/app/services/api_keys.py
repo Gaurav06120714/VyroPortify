@@ -51,7 +51,12 @@ async def get_api_key_auth(
     authorization: str | None = Header(default=None),
     db: AsyncSession = Depends(get_db),
 ) -> APIKeyAuth:
-    """FastAPI dependency: validate a `Authorization: Bearer vp_…` API key."""
+    """FastAPI dependency: validate a personal-API-key bearer token (`vp_…`).
+
+    v3.0.2 — OAuth access tokens (`oat_…`) are accepted as well; both resolve
+    into an `APIKeyAuth`-shaped object so downstream routes don't have to care
+    which credential type was used.
+    """
     if not authorization or not authorization.lower().startswith("bearer "):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -59,6 +64,28 @@ async def get_api_key_auth(
             headers={"WWW-Authenticate": "Bearer"},
         )
     raw = authorization.split(" ", 1)[1].strip()
+
+    # OAuth access token path — defer to the OAuth service and adapt the result.
+    if raw.startswith("oat_"):
+        from app.services.oauth import get_oauth_token_auth  # noqa: PLC0415
+
+        oauth_auth = await get_oauth_token_auth(authorization=authorization, db=db)
+
+        class _OAuthAdapter:
+            def __init__(self, inner):
+                self.user = inner.user
+                self.key = inner.token  # quacks like an APIKey for last-used logging
+                self.scopes = inner.scopes
+
+            def require_scope(self, scope: str) -> None:
+                if scope not in self.scopes:
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail=f"OAuth token missing required scope: {scope}",
+                    )
+
+        return _OAuthAdapter(oauth_auth)  # type: ignore[return-value]
+
     if not raw.startswith(KEY_PREFIX):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
