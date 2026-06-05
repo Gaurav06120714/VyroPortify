@@ -32,6 +32,7 @@ from app.routers import (
     billing,
     connect,
     marketplace,
+    oauth,
     organization,
     portfolio,
     public_api,
@@ -291,6 +292,7 @@ app.include_router(connect.router,      prefix=settings.API_V1_PREFIX)
 app.include_router(api_keys.router,     prefix=settings.API_V1_PREFIX)
 app.include_router(public_api.router,   prefix=settings.API_V1_PREFIX)
 app.include_router(webhooks.router,     prefix=settings.API_V1_PREFIX)
+app.include_router(oauth.router,        prefix=settings.API_V1_PREFIX)
 
 
 # ── Health checks ──────────────────────────────────────────────────────────────
