@@ -22,7 +22,9 @@ import logging
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Form, HTTPException, status
+from fastapi import APIRouter, Form, HTTPException, Request, status
+
+from app.core.limiter import limiter
 from pydantic import BaseModel, Field, HttpUrl
 from sqlalchemy import select
 
@@ -223,7 +225,9 @@ async def grant_consent(body: ConsentRequest, db: DB, current_user: CurrentUser)
 # ── Token exchange (public) ────────────────────────────────────────────────────
 
 @router.post("/token")
+@limiter.limit("20/minute")   # v3.3.1 — brute-force protection on token exchange
 async def token_exchange(
+    request: Request,
     db: DB,
     grant_type: str = Form(...),
     code: str = Form(...),

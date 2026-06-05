@@ -38,6 +38,22 @@ def _sync_engine():
     acks_late=True,
 )
 def deliver_webhook_task(*, endpoint_id: str, event: str, data: dict[str, Any]) -> dict:
+    # v3.3.1 — receiver throttle. Cap each endpoint at 60 deliveries / minute so
+    # a flood of events (or a misconfigured loop) can't be amplified by us into
+    # a DoS against the receiver — or against ourselves if the receiver is slow.
+    try:
+        import redis as _sync_redis
+        rc = _sync_redis.Redis.from_url(settings.REDIS_URL, decode_responses=True)
+        bucket_key = f"wh:rate:{endpoint_id}:{int(__import__('time').time() // 60)}"
+        count = rc.incr(bucket_key)
+        if count == 1:
+            rc.expire(bucket_key, 120)
+        if count > 60:
+            logger.warning("webhook.throttled endpoint=%s minute_count=%d", endpoint_id, count)
+            return {"throttled": True, "count": int(count)}
+    except Exception as exc:
+        logger.warning("webhook.rate_check_failed endpoint=%s err=%s", endpoint_id, exc)
+
     engine = _sync_engine()
     with Session(engine, future=True) as db:
         ep = db.get(WebhookEndpoint, uuid.UUID(endpoint_id))
