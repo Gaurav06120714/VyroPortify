@@ -86,10 +86,16 @@ async def _ensure_member(
 async def list_organizations(
     current_user: CurrentUser, db: DB
 ) -> list[OrganizationWithRole]:
+    # B12/B22: stable ordering. Without this, Postgres returns rows in
+    # heap order — refreshing the audit-log page (which picks orgs[0])
+    # showed a different org's events on each refresh. Personal org
+    # first (always the user's "home"), then team orgs by creation date.
     result = await db.execute(
         select(Membership)
+        .join(Organization, Membership.organization_id == Organization.id)
         .where(Membership.user_id == current_user.id)
         .options(selectinload(Membership.organization))
+        .order_by(Organization.is_personal.desc(), Organization.created_at.asc())
     )
     rows = result.scalars().all()
     return [
