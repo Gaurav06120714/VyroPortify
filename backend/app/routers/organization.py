@@ -343,3 +343,116 @@ async def remove_member(
             )
     await db.delete(m)
     await db.commit()
+
+
+# ── v3.0.3 — White-label branding (enterprise) ────────────────────────────────
+
+from pydantic import BaseModel as _BrBase  # noqa: E402
+
+
+class BrandingResponse(_BrBase):
+    logo_url: str | None = None
+    primary_color: str | None = None
+    accent_color: str | None = None
+    font_family: str | None = None
+    custom_css: str | None = None
+    hide_branding: bool = False
+
+
+class BrandingUpdate(_BrBase):
+    logo_url: str | None = None
+    primary_color: str | None = None  # hex #RRGGBB or #RRGGBBAA
+    accent_color: str | None = None
+    font_family: str | None = None
+    custom_css: str | None = None
+    hide_branding: bool | None = None
+
+
+_FORBIDDEN_CSS = ("<script", "</script", "<iframe", "javascript:", "@import")
+
+
+def _sanitise_css(css: str | None) -> str | None:
+    if css is None:
+        return None
+    low = css.lower()
+    for bad in _FORBIDDEN_CSS:
+        if bad in low:
+            raise HTTPException(
+                status_code=400,
+                detail=f"custom_css contains disallowed token: {bad}",
+            )
+    if len(css) > 20_000:
+        raise HTTPException(status_code=400, detail="custom_css too large (>20kB)")
+    return css
+
+
+@router.get(
+    "/{org_id}/branding",
+    response_model=BrandingResponse,
+    summary="Get the org's white-label branding (members)",
+)
+async def get_branding(org_id: uuid.UUID, db: DB, current_user: CurrentUser) -> BrandingResponse:
+    org = await db.get(Organization, org_id)
+    if org is None:
+        raise HTTPException(status_code=404, detail="Org not found")
+    # Membership check
+    is_member = await db.scalar(
+        select(Membership.id).where(
+            Membership.organization_id == org_id, Membership.user_id == current_user.id
+        )
+    )
+    if is_member is None:
+        raise HTTPException(status_code=403, detail="Not a member of this org")
+    return BrandingResponse(
+        logo_url=org.logo_url,
+        primary_color=org.primary_color,
+        accent_color=org.accent_color,
+        font_family=org.font_family,
+        custom_css=org.custom_css,
+        hide_branding=org.hide_branding,
+    )
+
+
+@router.put(
+    "/{org_id}/branding",
+    response_model=BrandingResponse,
+    summary="Update white-label branding (admin+, enterprise plan only)",
+    dependencies=[Depends(require_role("admin"))],
+)
+async def update_branding(
+    org_id: uuid.UUID,
+    body: BrandingUpdate,
+    db: DB,
+    current_user: CurrentUser,
+) -> BrandingResponse:
+    org = await db.get(Organization, org_id)
+    if org is None:
+        raise HTTPException(status_code=404, detail="Org not found")
+    if org.plan != "enterprise":
+        raise HTTPException(
+            status_code=403,
+            detail="White-label branding requires the enterprise plan.",
+        )
+
+    if body.custom_css is not None:
+        org.custom_css = _sanitise_css(body.custom_css)
+    if body.logo_url is not None:
+        org.logo_url = body.logo_url or None
+    if body.primary_color is not None:
+        org.primary_color = body.primary_color or None
+    if body.accent_color is not None:
+        org.accent_color = body.accent_color or None
+    if body.font_family is not None:
+        org.font_family = body.font_family or None
+    if body.hide_branding is not None:
+        org.hide_branding = body.hide_branding
+
+    await db.commit()
+    return BrandingResponse(
+        logo_url=org.logo_url,
+        primary_color=org.primary_color,
+        accent_color=org.accent_color,
+        font_family=org.font_family,
+        custom_css=org.custom_css,
+        hide_branding=org.hide_branding,
+    )
