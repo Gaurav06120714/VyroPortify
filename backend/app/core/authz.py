@@ -111,28 +111,32 @@ def require_role(minimum: str) -> Callable:
     """FastAPI dependency: caller must hold *minimum* role in the org named in
     the path parameter ``org_id``.
 
-    Implementation note: we resolve the membership inside the dependency so
-    every route sharing the same dependency gets the same answer. We import
-    the database session and Membership lazily to keep the authz module
-    free of circular imports.
+    B2 fix: takes the request-scoped DB session as an injected dependency
+    (`db: DB`) instead of pulling a fresh one from ``async for db in get_db()``.
+    The latter opens a second connection whose transaction is independent
+    of the handler's — writes pending in the handler are invisible here,
+    which broke "invite teammate → role check immediately" flows.
     """
 
     from uuid import UUID
-    from fastapi import HTTPException, Request, status as http_status
+
+    from fastapi import HTTPException, status as http_status
+
+    from app.database import DB
 
     async def _dependency(
-        request: Request, current_user: CurrentUser
+        request: "Request",  # noqa: F821 — forward ref, imported below
+        current_user: CurrentUser,
+        db: DB,
     ) -> "Membership":
         # Late imports — keep core.authz lightweight at module load.
         from sqlalchemy import select
 
-        from app.database import get_db
         from app.models.organization import Membership
 
         raw_org = request.path_params.get("org_id")
         if raw_org is None:
-            # Programmer error: applied to a route without /:org_id/. Surface
-            # loudly so we catch it in tests rather than silently accepting.
+            # Programmer error: applied to a route without /:org_id/.
             raise RuntimeError(
                 "require_role applied to a route without an {org_id} path param"
             )
@@ -144,17 +148,13 @@ def require_role(minimum: str) -> Callable:
                 detail="Organization not found",
             )
 
-        # Pull the same session FastAPI gives downstream handlers. We don't
-        # want a second connection just for the role check.
-        async for db in get_db():
-            result = await db.execute(
-                select(Membership).where(
-                    Membership.organization_id == org_id,
-                    Membership.user_id == current_user.id,
-                )
+        result = await db.execute(
+            select(Membership).where(
+                Membership.organization_id == org_id,
+                Membership.user_id == current_user.id,
             )
-            membership = result.scalar_one_or_none()
-            break
+        )
+        membership = result.scalar_one_or_none()
 
         if membership is None or not has_role(membership.role, minimum):
             # Same 404 (not 403) policy as assert_owner — never leak the
@@ -166,3 +166,9 @@ def require_role(minimum: str) -> Callable:
         return membership
 
     return _dependency
+
+
+# Late import for the forward-referenced Request type above. Kept at
+# module bottom so the lightweight-import discipline of this file
+# (everything else is late-imported) survives.
+from fastapi import Request  # noqa: E402
