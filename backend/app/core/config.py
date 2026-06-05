@@ -34,7 +34,14 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
 
     # ── CORS ──────────────────────────────────────────────────────────────
-    CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:3001"]
+    # Dev defaults match the ports the project actually uses (Next dev
+    # server runs on 3007 per README; 3000/3001 retained for legacy /
+    # parallel-instance setups). Override in prod via env.
+    CORS_ORIGINS: list[str] = [
+        "http://localhost:3007",
+        "http://localhost:3000",
+        "http://localhost:3001",
+    ]
     CORS_ALLOW_CREDENTIALS: bool = True
 
     # ── Redis / Celery ────────────────────────────────────────────────────
