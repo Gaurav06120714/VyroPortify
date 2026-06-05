@@ -197,6 +197,15 @@ async def submit_template(
     if not _SLUG_RE.match(body.id):
         raise HTTPException(status_code=400, detail="Template id must be lowercase a-z, 0-9, hyphens only")
 
+    # B11 fix: race-free duplicate-id handling. The check-then-insert
+    # pattern (db.get + db.add) has a TOCTOU window where two
+    # concurrent submissions for the same slug both see no row and
+    # both insert — second one explodes on the PK constraint as a
+    # generic IntegrityError → 500. We keep the cheap pre-check for
+    # the common case (gives clean 409 immediately) AND wrap the
+    # commit so the race-window 500 collapses to 409.
+    from sqlalchemy.exc import IntegrityError
+
     existing = await db.get(Template, body.id)
     if existing is not None:
         raise HTTPException(status_code=409, detail="Template id already exists")
@@ -214,7 +223,13 @@ async def submit_template(
         status="pending",
     )
     db.add(t)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(
+            status_code=409, detail="Template id already exists"
+        )
     await db.refresh(t)
     logger.info("template_submitted id=%s author=%s", t.id, current_user.id)
     return TemplateOut.model_validate(t)
