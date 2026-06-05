@@ -19,7 +19,6 @@ role (which arrives in v3.0). Trivially extended later by swapping
 the dependency in `_require_moderator`.
 """
 
-from __future__ import annotations
 
 import logging
 import re

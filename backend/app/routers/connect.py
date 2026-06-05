@@ -12,7 +12,6 @@ checkout is initiated (separate sub-version because that flow
 intersects with portfolio generation, not just the marketplace).
 """
 
-from __future__ import annotations
 
 import logging
 

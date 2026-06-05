@@ -13,7 +13,11 @@ DELETE /api/v1/organizations/{id}/members/{user_id}  Remove member (owner only)
 RBAC enforcement lives in app.core.authz.require_role (v2.0.1).
 """
 
-from __future__ import annotations
+# NOTE: do NOT add `from __future__ import annotations` here.
+# It turns Annotated[..., Depends(...)] into ForwardRef strings, which
+# Pydantic v2.13 can't fully resolve when FastAPI builds the OpenAPI
+# schema for routes that mix DB and CurrentUser deps — observed as a
+# 422 "query.db required" at runtime and a 500 on /openapi.json.
 
 import logging
 import re
@@ -266,6 +270,7 @@ async def update_role(
 )
 async def list_audit_log(
     org_id: uuid.UUID,
+    current_user: CurrentUser,
     db: DB,
     limit: int = 50,
     offset: int = 0,

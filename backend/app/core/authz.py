@@ -11,10 +11,9 @@ is indistinguishable from "no such resource" and is the OWASP-recommended
 response for authorization failures on direct-object references.
 """
 
-from __future__ import annotations
 
 import uuid
-from typing import Callable, Protocol, TypeVar
+from typing import Any, Callable, Protocol, TypeVar
 
 from fastapi import Depends, HTTPException, status
 
