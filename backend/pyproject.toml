@@ -68,6 +68,13 @@ test = [
     "fakeredis>=2.23.0",
 ]
 
+# Tell setuptools 81+ which packages to install. Without this the
+# automatic discovery refuses to guess between `app/` and `alembic/`.
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]
+exclude = ["tests*", "alembic*"]
+
 [tool.black]
 line-length = 100
 target-version = ["py312"]
