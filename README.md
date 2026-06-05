@@ -44,6 +44,25 @@ VyroPortify uses Claude AI to transform your resume (or a quick form) into a bea
 
 ---
 
+## 🚀 Recently Shipped (v3.x)
+
+| Tag | Theme |
+|---|---|
+| [`v3.0.0`](https://github.com/Gaurav06120714/VyroPortify/releases/tag/v3.0.0) | Public REST API + scoped personal API keys (`vp_…`) |
+| [`v3.0.1`](https://github.com/Gaurav06120714/VyroPortify/releases/tag/v3.0.1) | Outbound webhooks — HMAC-signed, Celery-delivered, retried |
+| [`v3.0.2`](https://github.com/Gaurav06120714/VyroPortify/releases/tag/v3.0.2) | OAuth 2.0 (authorization-code + PKCE) for third-party apps |
+| [`v3.0.3`](https://github.com/Gaurav06120714/VyroPortify/releases/tag/v3.0.3) | White-label / custom theme for enterprise orgs |
+| [`v3.0.4`](https://github.com/Gaurav06120714/VyroPortify/releases/tag/v3.0.4) | SOC 2 / GDPR: right-to-access, right-to-erasure, policy disclosure |
+| [`v3.0.5`](https://github.com/Gaurav06120714/VyroPortify/releases/tag/v3.0.5) | SSO / SAML foundation (per-org IdP, email-domain discovery) |
+| [`v3.1.0`](https://github.com/Gaurav06120714/VyroPortify/releases/tag/v3.1.0) | Admin analytics API (overview, time-series, top portfolios) |
+| [`v3.2.0`](https://github.com/Gaurav06120714/VyroPortify/releases/tag/v3.2.0) | Bulk portfolio export as a streaming ZIP with manifest |
+| [`v3.3.0`](https://github.com/Gaurav06120714/VyroPortify/releases/tag/v3.3.0) | Webhook event catalog + delivery replay |
+| [`v3.3.1`](https://github.com/Gaurav06120714/VyroPortify/releases/tag/v3.3.1) | DDoS hardening: per-account quotas, scanner-path drop, receiver throttle |
+
+See **[Security, Performance & DDoS Protection](#-security-performance--ddos-protection)** below for the full defence stack.
+
+---
+
 ## 🗂 Project Structure
 
 ```
@@ -239,31 +258,83 @@ Base URL: `http://localhost:8001/api/v1`
 Interactive docs: [`/api/v1/docs`](http://localhost:8001/api/v1/docs)
 
 ```
-# Resume
-POST   /resume/build            AI-powered resume builder     (10 req/min)
-POST   /resume/suggest-skills   AI skill suggestions          (10 req/min)
-POST   /resume/cover-letter     AI cover letter generator     (10 req/min)
-POST   /resume/upload           Upload PDF / DOCX
-GET    /resume/                 List user resumes
+# ── Resume / AI ──────────────────────────────────────────────────────────────
+POST   /resume/build              AI resume builder            (6/hr · ai_build quota)
+POST   /resume/suggest-skills     AI skill suggestions         (10/hr · ai_enhance quota)
+POST   /resume/cover-letter       AI cover letter              (10/hr · ai_enhance quota)
+POST   /resume/upload             Upload PDF / DOCX
+GET    /resume/                   List user resumes
 
-# Portfolio
-POST   /portfolio/generate      Generate portfolio from resume (10 req/min)
-GET    /portfolio/{id}/status   Poll generation status
-GET    /portfolio/p/{slug}      Public portfolio (cached 1h)
-PUT    /portfolio/{id}/publish  Toggle public / private
-DELETE /portfolio/{id}          Delete portfolio
-GET    /portfolio/sitemap       All public slugs
+# ── Portfolio ────────────────────────────────────────────────────────────────
+POST   /portfolio/generate        Generate portfolio           (10/min)
+GET    /portfolio/{id}/status     Poll generation status
+GET    /portfolio/p/{slug}        Public portfolio (edge-cached 5 min)
+PUT    /portfolio/{id}/publish    Toggle public / private
+DELETE /portfolio/{id}            Delete portfolio
+GET    /portfolio/sitemap         All public slugs
 
-# Billing
-POST   /billing/create-checkout  Stripe checkout session
-GET    /billing/status           Subscription status
-GET    /billing/portal           Customer billing portal URL
+# ── Public API (v3.0.0) — vp_… key OR oat_… OAuth token ─────────────────────
+GET    /public/me                 Caller identity + granted scopes
+GET    /public/portfolios         Paginated list (portfolios:read)
+GET    /public/portfolios/{id}    Single portfolio (portfolios:read)
+GET    /public/resumes            Paginated list (resumes:read)
 
-# Auth
-GET    /auth/me                  Current user profile
+# ── API Key management (v3.0.0) ─────────────────────────────────────────────
+POST   /keys                      Issue API key (returns raw key once)
+GET    /keys                      List caller's keys
+DELETE /keys/{key_id}             Revoke
 
-# Health
-GET    /health                   Liveness probe
+# ── Outbound Webhooks (v3.0.1 + v3.3.0) ─────────────────────────────────────
+GET    /webhooks/events           Event catalog + signature scheme
+POST   /webhooks                  Register endpoint (returns secret once)
+GET    /webhooks                  List endpoints
+DELETE /webhooks/{id}             Delete
+GET    /webhooks/{id}/deliveries  Recent delivery audit
+POST   /webhooks/{id}/test        Dispatch a `ping` event
+POST   /webhooks/{id}/deliveries/{delivery_id}/replay   Re-fire a recorded payload
+
+# ── OAuth 2.0 third-party apps (v3.0.2) ─────────────────────────────────────
+POST   /oauth/apps                Register app (returns client_secret once)
+GET    /oauth/apps                List own apps
+DELETE /oauth/apps/{id}
+GET    /oauth/authorize           Inspect an authorize request (consent screen prep)
+POST   /oauth/consent             Issue one-time authorization code
+POST   /oauth/token               Exchange code → access token (20/min)
+GET    /oauth/grants              List apps holding tokens for the caller
+DELETE /oauth/grants/{id}         Revoke
+
+# ── Organizations & White-label (v2.0 + v3.0.3) ─────────────────────────────
+GET    /organizations             List caller's orgs
+POST   /organizations             Create org
+GET    /organizations/{id}/branding         Read org branding (members)
+PUT    /organizations/{id}/branding         Update branding (admin+, enterprise only)
+
+# ── Admin Analytics (v3.1.0) ────────────────────────────────────────────────
+GET    /analytics/orgs/{id}/overview        Headline counts
+GET    /analytics/orgs/{id}/timeseries      Daily portfolios + views
+GET    /analytics/orgs/{id}/top             Top portfolios by views
+
+# ── Compliance / SOC 2 (v3.0.4) ─────────────────────────────────────────────
+GET    /compliance/policies                 Public retention + subprocessor disclosure
+GET    /compliance/me/export                Right-to-access export (Art. 15)
+DELETE /compliance/me                       Right-to-erasure (Art. 17)
+GET    /compliance/me/audit                 Caller's audit events
+
+# ── SSO / SAML (v3.0.5) ─────────────────────────────────────────────────────
+GET    /sso/login?domain=…                  Public IdP discovery
+GET    /sso/configs/{org_id}                Read SAML config (admin+)
+PUT    /sso/configs/{org_id}                Configure IdP (admin+, enterprise)
+POST   /sso/acs                             SAML POST-binding ACS (stub)
+
+# ── Bulk Export (v3.2.0) ────────────────────────────────────────────────────
+GET    /bulk/portfolios.zip                 Streaming ZIP with manifest
+
+# ── Billing / Auth / Health ─────────────────────────────────────────────────
+POST   /billing/create-checkout             Stripe checkout
+GET    /billing/status                      Subscription status
+GET    /billing/portal                      Customer portal URL
+GET    /auth/me                             Current user profile
+GET    /health/ready                        Liveness + dependency probe
 ```
 
 ---
@@ -352,16 +423,82 @@ The `<SignIn />` and `<SignUp />` components on `/login` and `/register` automat
 
 ---
 
-## 🛡 Security & Performance
+## 🛡 Security, Performance & DDoS Protection
 
-- **Rate limiting** — SlowAPI: 10 req/min on all AI endpoints
-- **Redis caching** — Public portfolios cached 1h, sitemap 24h
-- **Security headers** — HSTS, CSP, X-Frame-Options, Permissions-Policy
-- **JWT auth** — Clerk RS256 JWKS verification, auto-create users on first call
-- **Image optimization** — Uploads compressed to WebP via Pillow before S3
-- **Error tracking** — Sentry on both frontend and backend
-- **Analytics** — PostHog with Clerk auto-identification
-- **Anti-flash** — localStorage theme applied before React hydrates (no white flash)
+VyroPortify treats abuse-resistance as a first-class feature, not an afterthought.
+Defences are layered so a single failure — a CDN outage, a leaked credential,
+a misbehaving receiver — cannot take the platform down.
+
+### Authentication & authorization
+
+| Concern | Implementation |
+|---|---|
+| User auth | Clerk-issued JWTs (RS256), verified against the cached JWKS |
+| Service-to-service auth | Personal API keys (`vp_…`), SHA-256 hashed at rest, scoped permissions |
+| Third-party apps | OAuth 2.0 authorization-code flow with PKCE (S256), `oat_…` access tokens |
+| RBAC | Per-org `owner / admin / editor / viewer`, enforced by `require_role` dependency |
+| SSO (enterprise) | Per-org SAML config with email-domain discovery (`/api/v1/sso/login`) |
+
+### Layered abuse defences
+
+| Layer | Mechanism | Where it lives |
+|---|---|---|
+| **L3/L4 floods** | Cloudflare proxy + WAF + Bot Fight Mode (operator-configured) | `docs/DDOS_HARDENING.md` |
+| **L7 scanner probes** | Middleware drops `/.env`, `/.git/`, `/wp-admin`, etc. → instant 404 | `app/main.py · ddos_hardening` |
+| **Headless bots** | Empty / `<3`-char `User-Agent` rejected on `POST/PUT/PATCH/DELETE` | `app/main.py · ddos_hardening` |
+| **Per-IP rate limit** | SlowAPI + Redis; proxy-aware key fn extracts `CF-Connecting-IP` | `app/core/limiter.py` |
+| **Per-account daily quota** | Plan-aware Redis counters, expire at UTC midnight | `app/services/quota.py` |
+| **Receiver amplification** | Outbound webhooks capped at 60 deliveries / endpoint / minute | `app/workers/tasks/deliver_webhook.py` |
+| **OAuth brute-force** | `/oauth/token` rate-limited to 20/min | `app/routers/oauth.py` |
+| **Oversized payloads** | Pre-handler size check against `MAX_REQUEST_BODY_BYTES` | `app/main.py · enforce_request_size_limit` |
+| **Static-asset spikes** | Public portfolio pages set `Cache-Control: public, max-age=300, s-maxage=900` | `app/main.py · ddos_hardening` |
+| **Prompt injection** | All user-supplied strings normalised through `sanitize_for_ai` before the model | `app/services/resume_parser.py` |
+| **Signature replay** | Webhook header `X-VyroPortify-Signature: t=<unix>,v1=<hmac>` over `{t}.{body}`; ±5 min window | `app/services/webhooks.py` |
+
+### Daily quotas (per-account, plan-aware)
+
+| Bucket | Free | Pro | Enterprise |
+|---|:---:|:---:|:---:|
+| `ai_build` (resume / portfolio generation) | 5 / day | 50 / day | 500 / day |
+| `ai_enhance` (cover letter, skill suggestions) | 10 / day | 200 / day | 2 000 / day |
+| `bulk_export` (ZIP downloads) | 2 / day | 20 / day | 200 / day |
+
+Quotas survive IP rotation — a distributed botnet cannot grind through the AI
+budget by spreading requests across thousands of addresses on a single account.
+
+### Web hardening
+
+- **Security headers** — HSTS, CSP, X-Frame-Options, Referrer-Policy, Permissions-Policy on every response
+- **CORS** — explicit allowlist; never `*`; production startup refuses to boot on misconfiguration
+- **Idempotent webhooks** — Stripe events de-duplicated in Redis for `WEBHOOK_IDEMPOTENCY_TTL_SECONDS`
+- **Audit log** — privileged actions persist to `audit_events`; structured security events flow to a separate `vyroportify.security` logger (SIEM-routable)
+
+### Compliance surface (SOC 2 / GDPR readiness)
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /api/v1/compliance/policies` | Public disclosure of retention, residency, subprocessors |
+| `GET /api/v1/compliance/me/export` | Article 15 right-to-access export |
+| `DELETE /api/v1/compliance/me` | Article 17 right-to-erasure with cascaded cleanup |
+| `GET /api/v1/compliance/me/audit` | Caller-scoped audit-event history |
+
+### Performance & observability
+
+- **Prompt cache** — Redis-backed AI completions; cache hit rate logged per call
+- **Provider failover** — Gemini → OpenRouter → Anthropic chain on transient errors
+- **Public-page caching** — portfolios 1 h, sitemap 24 h
+- **Image optimisation** — uploads compressed to WebP via Pillow before S3
+- **OpenTelemetry** — opt-in tracing; no-op when `OTEL_EXPORTER_OTLP_ENDPOINT` is unset
+- **Sentry** — frontend + backend error tracking, PII scrubbed at SDK level
+- **PostHog** — analytics with Clerk auto-identification
+- **Anti-flash theming** — inline script in `layout.tsx` applies the persisted theme before React hydrates
+
+### Operational playbook
+
+A full DDoS playbook lives in [`docs/DDOS_HARDENING.md`](docs/DDOS_HARDENING.md):
+Cloudflare onboarding, Cloudflare Turnstile (CAPTCHA) wiring, nginx limits,
+autoscale caps, Sentry alert thresholds, and a step-by-step incident-response
+runbook.
 
 ---
 
@@ -396,7 +533,10 @@ A milestone-driven plan. Every sub-version ends with a **Review Gate → Commit 
 | **v2.1** | Template marketplace (community + paid via Stripe Connect) | 4 wk |
 | **v2.2** | i18n + PWA + mobile polish | 3 wk |
 | **v2.3** | PDF Resume Export — ATS-friendly LaTeX resume.pdf | 3–4 wk |
-| **v3.0** | Platform — public API, webhooks, OAuth apps, white-label, SOC 2, SSO/SAML | 8–10 wk |
+| **v3.0** | Platform — public API, webhooks, OAuth apps, white-label, SOC 2, SSO/SAML | **shipped** |
+| **v3.1** | Admin analytics API for organizations | **shipped** |
+| **v3.2** | Bulk portfolio export (streaming ZIP + manifest) | **shipped** |
+| **v3.3** | Webhook event catalog + delivery replay + DDoS hardening | **shipped** |
 
 ### v1.1 — Foundation & Stability
 
