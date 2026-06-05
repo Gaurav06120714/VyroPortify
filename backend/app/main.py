@@ -31,6 +31,7 @@ from app.routers import (
     api_keys,
     auth,
     billing,
+    bulk_export,
     compliance,
     connect,
     marketplace,
@@ -299,6 +300,7 @@ app.include_router(oauth.router,        prefix=settings.API_V1_PREFIX)
 app.include_router(compliance.router,   prefix=settings.API_V1_PREFIX)
 app.include_router(sso.router,          prefix=settings.API_V1_PREFIX)
 app.include_router(analytics.router,    prefix=settings.API_V1_PREFIX)
+app.include_router(bulk_export.router,  prefix=settings.API_V1_PREFIX)
 
 
 # ── Health checks ──────────────────────────────────────────────────────────────
