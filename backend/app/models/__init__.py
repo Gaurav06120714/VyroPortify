@@ -7,6 +7,7 @@ from app.models.portfolio_view import PortfolioView
 from app.models.resume import Resume
 from app.models.resume_export import ResumeExport
 from app.models.template import Template, TemplateReview
+from app.models.oauth import OAuthAccessToken, OAuthApp, OAuthAuthorizationCode
 from app.models.user import User
 from app.models.webhook import WebhookDelivery, WebhookEndpoint
 
@@ -25,4 +26,7 @@ __all__ = [
     "ResumeExport",
     "WebhookEndpoint",
     "WebhookDelivery",
+    "OAuthApp",
+    "OAuthAuthorizationCode",
+    "OAuthAccessToken",
 ]
