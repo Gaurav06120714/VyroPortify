@@ -87,10 +87,37 @@ async def _generate_async(portfolio_id: str) -> None:
             await db.commit()
             logger.info("Portfolio %s generated in %dms", portfolio_id, duration_ms)
 
+            # v3.0.1 — outbound webhook: portfolio.published
+            try:
+                from app.services.webhooks import emit as emit_webhook
+                await emit_webhook(
+                    db,
+                    portfolio.user_id,
+                    "portfolio.published",
+                    {
+                        "portfolio_id": str(portfolio.id),
+                        "slug": portfolio.slug,
+                        "html_url": portfolio.html_url,
+                        "template_id": portfolio.template_id,
+                    },
+                )
+            except Exception as wh_exc:
+                logger.warning("portfolio.published webhook emit failed: %s", wh_exc)
+
         except Exception as exc:
             logger.exception("Portfolio %s generation failed: %s", portfolio_id, exc)
             portfolio.status = "failed"  # PortfolioStatus.FAILED.value
             await db.commit()
+            try:
+                from app.services.webhooks import emit as emit_webhook
+                await emit_webhook(
+                    db,
+                    portfolio.user_id,
+                    "portfolio.failed",
+                    {"portfolio_id": str(portfolio.id), "error": str(exc)[:300]},
+                )
+            except Exception:
+                pass
             raise
 
 

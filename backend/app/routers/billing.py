@@ -321,6 +321,33 @@ async def stripe_webhook(
         elif customer_id and sub_status in ("canceled", "unpaid", "past_due"):
             await _downgrade_user(db=db, customer_id=customer_id)
 
+    # ── v3.0.1 — fan out subscription.changed to user webhooks ────────────────
+    if event_type in (
+        "customer.subscription.deleted",
+        "customer.subscription.paused",
+        "customer.subscription.updated",
+        "invoice.payment_succeeded",
+    ):
+        try:
+            sub_obj = event["data"]["object"]
+            customer_id = sub_obj.get("customer")
+            if customer_id:
+                user = await _get_user_by_customer(db, customer_id)
+                if user:
+                    from app.services.webhooks import emit as emit_webhook
+                    await emit_webhook(
+                        db,
+                        user.id,
+                        "subscription.changed",
+                        {
+                            "stripe_event": event_type,
+                            "plan": user.plan,
+                            "status": sub_obj.get("status"),
+                        },
+                    )
+        except Exception as wh_exc:
+            logger.warning("subscription.changed webhook emit failed: %s", wh_exc)
+
     # ── Mark event as processed in Redis (idempotency) ────────────────────────
     # Write AFTER processing so a crash before completion doesn't lock out retries.
     if event_id:
