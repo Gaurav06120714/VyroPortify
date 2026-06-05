@@ -27,6 +27,7 @@ from app.core.security_config import security_settings
 from app.core.sentry import init_sentry
 from app.core.telemetry import init_otel
 from app.routers import (
+    analytics,
     api_keys,
     auth,
     billing,
@@ -297,6 +298,7 @@ app.include_router(webhooks.router,     prefix=settings.API_V1_PREFIX)
 app.include_router(oauth.router,        prefix=settings.API_V1_PREFIX)
 app.include_router(compliance.router,   prefix=settings.API_V1_PREFIX)
 app.include_router(sso.router,          prefix=settings.API_V1_PREFIX)
+app.include_router(analytics.router,    prefix=settings.API_V1_PREFIX)
 
 
 # ── Health checks ──────────────────────────────────────────────────────────────
