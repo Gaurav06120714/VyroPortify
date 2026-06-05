@@ -116,13 +116,17 @@ class CoverLetterResponse(BaseModel):
     status_code=status.HTTP_201_CREATED,
     summary="Build a resume from form data using Claude AI",
 )
-@limiter.limit("10/hour")
+@limiter.limit("6/hour")          # tightened from 10/hr — DDoS hardening v3.3.1
 async def build_resume(
     request: Request,
     payload: BuildResumeRequest,
     current_user: CurrentUser,
     db: DB,
 ) -> BuildResumeResponse:
+    # Per-account daily quota stops slow botnets from grinding the model budget.
+    from app.services.quota import consume as consume_quota
+    await consume_quota(current_user, "ai_build")
+
     from app.services.resume_builder import build_resume_with_claude
 
     form_data = payload.model_dump()
@@ -171,6 +175,8 @@ async def suggest_skills(
     payload: SuggestSkillsRequest,
     current_user: CurrentUser,
 ) -> SuggestSkillsResponse:
+    from app.services.quota import consume as consume_quota
+    await consume_quota(current_user, "ai_enhance")
     try:
         from app.services.resume_parser import sanitize_for_ai
 
@@ -219,6 +225,9 @@ async def generate_cover_letter(
     payload: CoverLetterRequest,
     current_user: CurrentUser,
 ) -> CoverLetterResponse:
+    from app.services.quota import consume as consume_quota
+    await consume_quota(current_user, "ai_enhance")
+
     from app.services.resume_parser import sanitize_for_ai
 
     safe_name = sanitize_for_ai(payload.name[:100], source="name")

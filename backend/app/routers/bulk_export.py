@@ -27,6 +27,10 @@ router = APIRouter(prefix="/bulk", tags=["Bulk Export"])
 
 @router.get("/portfolios.zip")
 async def bulk_portfolios_zip(db: DB, current_user: CurrentUser) -> StreamingResponse:
+    # v3.3.1 — daily quota; ZIP serialisation is CPU-heavy.
+    from app.services.quota import consume as consume_quota
+    await consume_quota(current_user, "bulk_export")
+
     rows = (
         await db.execute(
             select(Portfolio).where(Portfolio.user_id == current_user.id).order_by(Portfolio.created_at)
