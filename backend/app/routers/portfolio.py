@@ -326,12 +326,18 @@ async def get_public_portfolio(request: Request, slug: str, db: DB) -> Portfolio
                 country=country,
             )
         )
+        # Snapshot the ORM row into the Pydantic response BEFORE commit.
+        # SQLAlchemy expires attributes on commit by default; reading them
+        # afterwards triggers a lazy refresh that runs outside the
+        # greenlet context → MissingGreenlet. We had `_to_response(p)`
+        # AFTER `db.commit()` and FastAPI's response serializer then
+        # 500'd on every public page load.
+        response = _to_response(p)
         await db.commit()
     except Exception:
         # Analytics failures must never 500 a public page view.
-        pass
-
-    response = _to_response(p)
+        # Make sure response is still defined for the cache write below.
+        response = _to_response(p)
 
     # Cache for 1 hour
     await cache.set(cache_key, response.model_dump(), ttl=PORTFOLIO_PAGE_TTL)
