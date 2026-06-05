@@ -93,9 +93,16 @@
 {% endif %}
 
 % ── Skills ───────────────────────────────────────────────────────────────────
+% B18 fix: render the separator as raw template text inside the loop
+% instead of inside a join string. The Jinja finalize=latex_escape
+% hook runs on every {{ expr }} output, so a join separator that
+% contains backslashes (`\textbullet`) would become
+% `\textbackslash{}textbullet` in the rendered PDF. Each skill goes
+% through finalize individually, the `\textbullet\` between them is
+% template literal — emitted untouched.
 {% if skills %}
 \section*{Skills}
-{{ skills | join(" \\textbullet\\ ") }}
+{% for skill in skills %}{{ skill }}{% if not loop.last %} \textbullet\ {% endif %}{% endfor %}
 {% endif %}
 
 % ── Certifications ───────────────────────────────────────────────────────────
