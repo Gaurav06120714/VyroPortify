@@ -48,7 +48,7 @@ services:
     runtime: python
     plan: free
     rootDir: backend
-    buildCommand: pip install -e . && alembic upgrade head
+    buildCommand: pip install -e .
     startCommand: bash start.sh
     healthCheckPath: /api/v1/health/ready
     envVars:
