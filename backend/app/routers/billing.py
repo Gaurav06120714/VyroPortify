@@ -216,6 +216,14 @@ async def stripe_webhook(
         logger.error("Webhook parse error: %s", exc)
         raise HTTPException(status_code=400, detail="Bad webhook payload")
 
+    # Stripe SDK ≥10 returns a stripe.Event object (attribute access, no .get()).
+    # Normalise the whole payload to a plain dict once so the rest of the
+    # handler can keep using .get() chains without per-line type checks.
+    if hasattr(event, "to_dict_recursive"):
+        event = event.to_dict_recursive()
+    elif hasattr(event, "to_dict"):
+        event = event.to_dict()
+
     event_id: str = event.get("id", "")
     event_type: str = event["type"]
 
