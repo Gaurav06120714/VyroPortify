@@ -5,10 +5,17 @@ const isPublicRoute = createRouteMatcher([
   "/",
   "/login(.*)",
   "/register(.*)",
+  "/signup(.*)",            // marketing alias for /register
   "/portfolio/(.*)",
   "/pricing(.*)",
   "/templates(.*)",
   "/api/webhook(.*)",
+  // SEO / PWA assets — must be publicly fetchable
+  "/sitemap.xml",
+  "/robots.txt",
+  "/manifest.webmanifest",
+  "/favicon.ico",
+  "/_next/(.*)",            // Next.js build assets
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
