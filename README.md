@@ -4,6 +4,8 @@
 
 ### Turn your resume into a stunning, hosted portfolio in under 60 seconds.
 
+**🚀 [Live demo → vyroportify.vercel.app](https://vyroportify.vercel.app)** · API: [vyroportify-api.onrender.com](https://vyroportify-api.onrender.com/api/v1/health/ready)
+
 [![Next.js](https://img.shields.io/badge/Next.js_15-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![Claude AI](https://img.shields.io/badge/Claude_AI-D97706?style=for-the-badge&logo=anthropic&logoColor=white)](https://anthropic.com/)
@@ -136,8 +138,9 @@ The rest of the documentation lives under [`docs/`](docs/):
 | 🔐 Clerk dashboard setup (step-by-step) | [docs/AUTH_SETUP.md](docs/AUTH_SETUP.md) |
 | 🚀 Local development (env, services, migrations) | [docs/LOCAL_DEV.md](docs/LOCAL_DEV.md) |
 | 🗂 Project structure | [docs/PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md) |
+| 🧱 Tech stack (architecture diagram + every dep) | [docs/STACK.md](docs/STACK.md) |
 | 🔑 API reference (full v3 surface) | [docs/API.md](docs/API.md) |
-| 🌐 Deployment (Vercel + Railway) | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) |
+| 🌐 Deployment (Vercel + Render — live) | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) |
 | 🧪 Testing (vitest, pytest, Playwright) | [docs/TESTING.md](docs/TESTING.md) |
 | 🛡 DDoS hardening playbook | [docs/DDOS_HARDENING.md](docs/DDOS_HARDENING.md) |
 | 💾 Backup & disaster recovery | [docs/BACKUP_DR.md](docs/BACKUP_DR.md) |
@@ -162,6 +165,7 @@ The rest of the documentation lives under [`docs/`](docs/):
 | [`v3.3.0`](https://github.com/Gaurav06120714/VyroPortify/releases/tag/v3.3.0) | Webhook event catalog + replay |
 | [`v3.3.1`](https://github.com/Gaurav06120714/VyroPortify/releases/tag/v3.3.1) | DDoS hardening (quotas, middleware, throttles) |
 | [`v3.4.0`](https://github.com/Gaurav06120714/VyroPortify/releases/tag/v3.4.0) | Clerk-backed multi-method auth + user export |
+| **🚀 Live deploy** | Frontend on Vercel + backend/DB/Redis on Render (free tier, $0/mo) — see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) |
 
 ---
 
