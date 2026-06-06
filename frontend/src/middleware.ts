@@ -1,3 +1,4 @@
+import { NextResponse } from "next/server";
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
 const isPublicRoute = createRouteMatcher([
@@ -11,8 +12,19 @@ const isPublicRoute = createRouteMatcher([
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
-  if (!isPublicRoute(req)) {
-    await auth.protect();
+  if (isPublicRoute(req)) return;
+
+  // Bare `auth.protect()` returns 404 for unauthenticated visitors, which made
+  // /dashboard/* (incl. /dashboard/settings/billing) look broken instead of
+  // bouncing the user to login. Redirect explicitly to /login with a
+  // redirect_url so Clerk returns them to the originally requested page.
+  const { userId } = await auth();
+  if (!userId) {
+    const url = req.nextUrl.clone();
+    const target = url.pathname + url.search;
+    url.pathname = "/login";
+    url.searchParams.set("redirect_url", target);
+    return NextResponse.redirect(url);
   }
 });
 
