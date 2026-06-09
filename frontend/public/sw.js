@@ -1,19 +1,3 @@
-// VyroPortify service worker (v2.2.1).
-//
-// Strategy
-// --------
-// - Cache the offline shell at install time so an offline visitor sees
-//   a branded "you're offline" page instead of Chrome's dinosaur.
-// - Network-first for HTML navigations (so logged-in dashboard pages
-//   stay fresh) with offline-shell fallback.
-// - Stale-while-revalidate for /_next/static (immutable, hashed) so
-//   repeat visits are instant.
-// - Skip everything else (API, third-party). API responses contain
-//   auth-stamped data and must not be cached.
-//
-// Versioning: bump CACHE_VERSION on any change. The activate handler
-// purges anything that doesn't match.
-
 const CACHE_VERSION = "vyro-v1";
 const SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
@@ -45,20 +29,10 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(request.url);
 
-  // Skip cross-origin entirely.
   if (url.origin !== self.location.origin) return;
 
-  // Skip API routes — auth-bound data must always be fresh.
   if (url.pathname.startsWith("/api/")) return;
 
-  // HTML navigations: network-first, offline-shell on failure.
-  //
-  // B17 fix: if the precache somehow missed /offline.html (first
-  // install dropped mid-fetch, storage quota hit, etc.) caches.match
-  // resolves to `undefined` and respondWith(undefined) turns into a
-  // hard network error on the page. The fallback chain now ends in a
-  // hardcoded inline Response so the user always sees *something*
-  // instead of a broken page.
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request).catch(async () => {
@@ -77,7 +51,6 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // /_next/static assets: stale-while-revalidate.
   if (url.pathname.startsWith("/_next/static/")) {
     event.respondWith(
       caches.open(STATIC_CACHE).then(async (cache) => {
