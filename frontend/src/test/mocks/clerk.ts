@@ -1,10 +1,3 @@
-/**
- * Mock for @clerk/nextjs hooks used in components.
- *
- * Usage:
- *   vi.mock('@clerk/nextjs', () => clerkMocks)
- */
-
 import { vi } from "vitest";
 
 export const mockGetToken = vi.fn().mockResolvedValue("mock-bearer-token");
@@ -25,7 +18,6 @@ export const mockUseUser = vi.fn().mockReturnValue({
   },
 });
 
-/** Drop-in replacement for the clerk module. Pass to vi.mock. */
 export const clerkMocks = {
   useAuth: mockUseAuth,
   useUser: mockUseUser,
