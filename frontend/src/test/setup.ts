@@ -1,6 +1,5 @@
 import "@testing-library/jest-dom";
 
-// Mock window.matchMedia — jsdom does not implement it
 Object.defineProperty(window, "matchMedia", {
   writable: true,
   value: (query: string) => ({
@@ -15,14 +14,12 @@ Object.defineProperty(window, "matchMedia", {
   }),
 });
 
-// Mock IntersectionObserver — jsdom does not implement it
 globalThis.IntersectionObserver = class {
   observe() {}
   unobserve() {}
   disconnect() {}
 } as unknown as typeof IntersectionObserver;
 
-// Mock ResizeObserver
 globalThis.ResizeObserver = class {
   observe() {}
   unobserve() {}
