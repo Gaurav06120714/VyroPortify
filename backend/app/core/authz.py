@@ -11,7 +11,6 @@ is indistinguishable from "no such resource" and is the OWASP-recommended
 response for authorization failures on direct-object references.
 """
 
-
 import uuid
 from typing import Any, Callable, Protocol, TypeVar
 
@@ -22,17 +21,13 @@ from app.core.exceptions import PlanLimitExceeded
 from app.models.user import User
 from app.security import CurrentUser
 
-
 class _OwnedResource(Protocol):
     user_id: uuid.UUID
-
 
 class _Principal(Protocol):
     id: uuid.UUID
 
-
 T = TypeVar("T", bound=_OwnedResource)
-
 
 def assert_owner(resource: T | None, user: _Principal) -> T:
     """Return *resource* if it exists and is owned by *user*, else raise 404.
@@ -49,16 +44,11 @@ def assert_owner(resource: T | None, user: _Principal) -> T:
         )
     return resource
 
-
-# ── Plan gating ────────────────────────────────────────────────────────────────
-
-# Plans are ordered so that a higher plan satisfies any lower-plan requirement.
 _PLAN_RANK: dict[Plan, int] = {
     Plan.FREE: 0,
     Plan.PRO: 1,
     Plan.ENTERPRISE: 2,
 }
-
 
 def require_plan(minimum: Plan, *, feature: str | None = None) -> Callable[[User], User]:
     """FastAPI dependency that enforces a minimum plan for the current user.
@@ -89,10 +79,6 @@ def require_plan(minimum: Plan, *, feature: str | None = None) -> Callable[[User
 
     return _dependency
 
-
-# ── Role-based access (v2.0.1) ────────────────────────────────────────────────
-
-# Roles are ordered so a higher role satisfies any lower-role requirement.
 _ROLE_RANK: dict[str, int] = {
     "viewer": 0,
     "editor": 1,
@@ -100,11 +86,9 @@ _ROLE_RANK: dict[str, int] = {
     "owner": 3,
 }
 
-
 def has_role(role: str, minimum: str) -> bool:
     """Pure helper for unit tests and service code."""
     return _ROLE_RANK.get(role, -1) >= _ROLE_RANK[minimum]
-
 
 def require_role(minimum: str) -> Callable:
     """FastAPI dependency: caller must hold *minimum* role in the org named in
@@ -124,18 +108,18 @@ def require_role(minimum: str) -> Callable:
     from app.database import DB
 
     async def _dependency(
-        request: "Request",  # noqa: F821 — forward ref, imported below
+        request: "Request",  
         current_user: CurrentUser,
         db: DB,
     ) -> "Membership":
-        # Late imports — keep core.authz lightweight at module load.
+        
         from sqlalchemy import select
 
         from app.models.organization import Membership
 
         raw_org = request.path_params.get("org_id")
         if raw_org is None:
-            # Programmer error: applied to a route without /:org_id/.
+            
             raise RuntimeError(
                 "require_role applied to a route without an {org_id} path param"
             )
@@ -156,8 +140,7 @@ def require_role(minimum: str) -> Callable:
         membership = result.scalar_one_or_none()
 
         if membership is None or not has_role(membership.role, minimum):
-            # Same 404 (not 403) policy as assert_owner — never leak the
-            # existence of an org the caller can't see.
+            
             raise HTTPException(
                 status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Organization not found",
@@ -166,17 +149,10 @@ def require_role(minimum: str) -> Callable:
 
     return _dependency
 
-
-# Late import for the forward-referenced Request type above. Kept at
-# module bottom so the lightweight-import discipline of this file
-# (everything else is late-imported) survives.
-from fastapi import Request  # noqa: E402
-
-
-# ── Org-aware resource access (v2.0.1 promise, finally wired in B4) ───────────
+from fastapi import Request  
 
 async def assert_resource_access(
-    db,  # AsyncSession — kept loose to avoid the import cycle
+    db,  
     resource,
     user,
     *,
@@ -203,12 +179,9 @@ async def assert_resource_access(
             detail="Resource not found",
         )
 
-    # Direct ownership — fast path.
     if getattr(resource, "user_id", None) == user.id:
         return resource
 
-    # Org membership — only when the resource has been assigned to an org
-    # (NULL during the v2.0.x rollout window; see migration 0006).
     org_id = getattr(resource, "organization_id", None)
     if org_id is not None:
         from app.models.organization import Membership
