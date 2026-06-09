@@ -26,7 +26,7 @@ export default function ProGateModal({ open, onClose, featureName }: Props) {
     <AnimatePresence>
       {open && (
         <>
-          {/* Backdrop */}
+          {}
           <motion.div
             key="backdrop"
             initial={{ opacity: 0 }}
@@ -37,7 +37,7 @@ export default function ProGateModal({ open, onClose, featureName }: Props) {
             className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
           />
 
-          {/* Modal */}
+          {}
           <motion.div
             key="modal"
             initial={{ opacity: 0, scale: 0.93, y: 16 }}
@@ -47,10 +47,10 @@ export default function ProGateModal({ open, onClose, featureName }: Props) {
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
           >
             <div className="relative w-full max-w-md overflow-hidden rounded-2xl border border-[var(--pf-border-hover)] bg-[var(--pf-surface)] shadow-[0_0_80px_var(--pf-accent-soft)]">
-              {/* Glow top bar */}
+              {}
               <div className="h-1 w-full bg-gradient-to-r from-[var(--pf-accent)] to-[#00d4ff]" />
 
-              {/* Close */}
+              {}
               <button
                 onClick={onClose}
                 className="absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-lg text-[var(--pf-muted)] hover:bg-[var(--pf-border-dim)] hover:text-[var(--pf-text)] transition-colors"
@@ -59,12 +59,12 @@ export default function ProGateModal({ open, onClose, featureName }: Props) {
               </button>
 
               <div className="p-7">
-                {/* Icon */}
+                {}
                 <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--pf-accent-soft)]">
                   <Zap className="h-6 w-6 text-[var(--pf-accent)]" />
                 </div>
 
-                {/* Heading */}
+                {}
                 <h2 className="text-xl font-bold text-[var(--pf-text)]">
                   {featureName
                     ? `"${featureName}" is a Pro feature`
@@ -75,7 +75,7 @@ export default function ProGateModal({ open, onClose, featureName }: Props) {
                   <span className="font-semibold text-[var(--pf-text)]">$9/month</span>.
                 </p>
 
-                {/* Perks */}
+                {}
                 <ul className="mt-5 space-y-2">
                   {PRO_PERKS.map((perk) => (
                     <li key={perk} className="flex items-center gap-2.5 text-sm text-[var(--pf-text)]">
@@ -87,7 +87,7 @@ export default function ProGateModal({ open, onClose, featureName }: Props) {
                   ))}
                 </ul>
 
-                {/* CTA */}
+                {}
                 <div className="mt-6 flex gap-3">
                   <button
                     onClick={() => { onClose(); router.push("/pricing"); }}
