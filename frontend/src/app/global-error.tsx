@@ -3,9 +3,6 @@
 import { useEffect } from "react";
 import * as Sentry from "@sentry/nextjs";
 
-// Catches errors thrown above the root layout (where ThemeProvider / Clerk
-// haven't mounted yet). Must render its own <html> and <body>; CSS vars and
-// fonts are unavailable here, so styles are inlined.
 export default function GlobalError({
   error,
   reset,
