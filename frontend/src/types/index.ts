@@ -50,8 +50,6 @@ export interface PaginatedResponse<T> {
   size: number;
 }
 
-// ── Resume Builder ─────────────────────────────────────────────────────────────
-
 export interface WorkExperienceInput {
   company: string;
   role: string;
