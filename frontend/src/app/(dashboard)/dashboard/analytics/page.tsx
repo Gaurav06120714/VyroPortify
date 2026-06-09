@@ -33,7 +33,6 @@ interface PortfolioStat {
   topReferrer: string;
 }
 
-// Realistic mock data — replace with real analytics endpoint
 function generateMockStats(portfolios: Portfolio[]): PortfolioStat[] {
   const referrers = ["LinkedIn", "Twitter", "Direct", "Google", "GitHub"];
   return portfolios.map((p, i) => {
@@ -71,7 +70,7 @@ export default function AnalyticsPage() {
         setPortfolios(list);
         setStats(generateMockStats(list.slice(0, 5)));
       } catch {
-        // graceful — keep empty state
+        
       } finally {
         setLoading(false);
       }
@@ -101,7 +100,7 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      {/* Top stat cards */}
+      {}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <StatCard
           icon={<Eye className="h-4 w-4" />}
@@ -126,7 +125,7 @@ export default function AnalyticsPage() {
         />
       </div>
 
-      {/* Trend chart */}
+      {}
       <div className="card-calm p-5">
         <div className="mb-4 flex items-center justify-between">
           <div>
@@ -170,7 +169,7 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      {/* Per-portfolio breakdown */}
+      {}
       <div className="card-calm overflow-hidden">
         <div className="border-b border-[var(--pf-border-subtle)] px-5 py-3.5">
           <h2 className="text-[15px] font-semibold text-[var(--pf-text)]">
@@ -239,7 +238,7 @@ export default function AnalyticsPage() {
         )}
       </div>
 
-      {/* Insights card */}
+      {}
       <div className="card-calm border-[var(--pf-border-medium)] p-5">
         <div className="flex items-start gap-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--pf-accent-subtle)]">
