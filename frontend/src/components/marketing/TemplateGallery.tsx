@@ -54,12 +54,12 @@ function TemplateCard({ tpl, index }: { tpl: (typeof TEMPLATES)[0]; index: numbe
       onMouseLeave={() => setHovered(false)}
       className="group relative overflow-hidden rounded-2xl border border-[var(--pf-accent-soft)] bg-[var(--pf-surface)] transition-all duration-300 hover:border-[var(--pf-border-hover)]"
     >
-      {/* Preview area */}
+      {}
       <div
         className="relative h-56 w-full overflow-hidden"
         style={{ background: tpl.bg }}
       >
-        {/* Faux browser bar */}
+        {}
         <div
           className="flex h-8 items-center gap-1.5 px-3"
           style={{ background: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.05)" }}
@@ -69,9 +69,9 @@ function TemplateCard({ tpl, index }: { tpl: (typeof TEMPLATES)[0]; index: numbe
           <div className="h-2 w-2 rounded-full bg-green-400/60" />
         </div>
 
-        {/* Simulated content */}
+        {}
         <div className={`absolute inset-0 top-8 flex flex-col gap-3 bg-gradient-to-br ${tpl.hero} p-5`}>
-          {/* Hero strip */}
+          {}
           <div className="flex items-center gap-3">
             <div
               className="h-10 w-10 flex-shrink-0 rounded-full"
@@ -88,7 +88,7 @@ function TemplateCard({ tpl, index }: { tpl: (typeof TEMPLATES)[0]; index: numbe
               />
             </div>
           </div>
-          {/* Skill chips */}
+          {}
           <div className="flex gap-2">
             {tpl.skills.map((s) => (
               <div
@@ -104,7 +104,7 @@ function TemplateCard({ tpl, index }: { tpl: (typeof TEMPLATES)[0]; index: numbe
               </div>
             ))}
           </div>
-          {/* Project cards */}
+          {}
           <div className="mt-1 grid grid-cols-2 gap-2">
             {[...Array(2)].map((_, i) => (
               <div
@@ -128,7 +128,7 @@ function TemplateCard({ tpl, index }: { tpl: (typeof TEMPLATES)[0]; index: numbe
           </div>
         </div>
 
-        {/* Hover overlay */}
+        {}
         {hovered && (
           <div className="absolute inset-0 flex items-center justify-center gap-3 bg-black/50">
             <Link
@@ -145,7 +145,7 @@ function TemplateCard({ tpl, index }: { tpl: (typeof TEMPLATES)[0]; index: numbe
         )}
       </div>
 
-      {/* Info */}
+      {}
       <div className="p-5">
         <div className="flex items-center justify-between">
           <h3 className="font-bold text-white">{tpl.name}</h3>
@@ -171,9 +171,7 @@ export default function TemplateGallery() {
           <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[var(--pf-border-hover)] bg-[var(--pf-border-subtle)] px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-[var(--pf-accent)]">
             Templates
           </div>
-          {/* UX-02: was text-white — invisible on the light surface that
-              shipped in v1.7.2. Switched to the --pf-text token so it
-              follows the active palette. */}
+          {}
           <h2 className="text-h1 sm:text-display text-[var(--pf-text)]">
             Three themes
           </h2>
