@@ -21,7 +21,6 @@ from app.models.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 if TYPE_CHECKING:
     from app.models.user import User
 
-
 class APIKey(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "api_keys"
 
