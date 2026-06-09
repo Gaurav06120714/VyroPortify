@@ -50,22 +50,17 @@ from app.routers.api_keys import ALLOWED_SCOPES
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/oauth", tags=["OAuth"])
 
-
-# ── Schemas ────────────────────────────────────────────────────────────────────
-
 class CreateAppRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=120)
     redirect_uris: list[HttpUrl] = Field(..., min_length=1)
     homepage_url: HttpUrl | None = None
 
-
 class CreateAppResponse(BaseModel):
     id: uuid.UUID
     name: str
     client_id: str
-    client_secret: str  # only returned once
+    client_secret: str  
     redirect_uris: list[str]
-
 
 class AppResponse(BaseModel):
     id: uuid.UUID
@@ -75,7 +70,6 @@ class AppResponse(BaseModel):
     homepage_url: str | None
     created_at: datetime
 
-
 class ConsentRequest(BaseModel):
     client_id: str
     redirect_uri: str
@@ -84,12 +78,10 @@ class ConsentRequest(BaseModel):
     code_challenge_method: str | None = Field(default=None, pattern="^(plain|S256)$")
     state: str | None = None
 
-
 class ConsentResponse(BaseModel):
     code: str
     state: str | None
     redirect_uri: str
-
 
 class GrantResponse(BaseModel):
     id: uuid.UUID
@@ -98,9 +90,6 @@ class GrantResponse(BaseModel):
     scopes: list[str]
     expires_at: datetime
     created_at: datetime
-
-
-# ── App management ─────────────────────────────────────────────────────────────
 
 @router.post("/apps", response_model=CreateAppResponse, status_code=status.HTTP_201_CREATED)
 async def create_app(body: CreateAppRequest, db: DB, current_user: CurrentUser) -> CreateAppResponse:
@@ -126,7 +115,6 @@ async def create_app(body: CreateAppRequest, db: DB, current_user: CurrentUser) 
         redirect_uris=app_row.redirect_uri_list(),
     )
 
-
 @router.get("/apps", response_model=list[AppResponse])
 async def list_apps(db: DB, current_user: CurrentUser) -> list[AppResponse]:
     result = await db.execute(
@@ -144,7 +132,6 @@ async def list_apps(db: DB, current_user: CurrentUser) -> list[AppResponse]:
         for a in result.scalars().all()
     ]
 
-
 @router.delete("/apps/{app_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_app(app_id: uuid.UUID, db: DB, current_user: CurrentUser) -> None:
     app_row = await db.get(OAuthApp, app_id)
@@ -152,9 +139,6 @@ async def delete_app(app_id: uuid.UUID, db: DB, current_user: CurrentUser) -> No
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="App not found")
     await db.delete(app_row)
     await db.commit()
-
-
-# ── Authorization flow ─────────────────────────────────────────────────────────
 
 @router.get("/authorize")
 async def inspect_authorize(
@@ -191,7 +175,6 @@ async def inspect_authorize(
         "user": {"id": str(current_user.id), "email": current_user.email},
     }
 
-
 @router.post("/consent", response_model=ConsentResponse, status_code=status.HTTP_201_CREATED)
 async def grant_consent(body: ConsentRequest, db: DB, current_user: CurrentUser) -> ConsentResponse:
     app_row = (await db.execute(select(OAuthApp).where(OAuthApp.client_id == body.client_id))).scalar_one_or_none()
@@ -221,11 +204,8 @@ async def grant_consent(body: ConsentRequest, db: DB, current_user: CurrentUser)
     await db.commit()
     return ConsentResponse(code=raw_code, state=body.state, redirect_uri=body.redirect_uri)
 
-
-# ── Token exchange (public) ────────────────────────────────────────────────────
-
 @router.post("/token")
-@limiter.limit("20/minute")   # v3.3.1 — brute-force protection on token exchange
+@limiter.limit("20/minute")   
 async def token_exchange(
     request: Request,
     db: DB,
@@ -259,7 +239,6 @@ async def token_exchange(
     if row.redirect_uri != redirect_uri:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="redirect_uri_mismatch")
 
-    # Credential check — PKCE if a challenge was set, otherwise the client_secret.
     if row.code_challenge:
         if not code_verifier or not verify_pkce(code_verifier, row.code_challenge, row.code_challenge_method or "S256"):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="invalid_pkce")
@@ -287,9 +266,6 @@ async def token_exchange(
         "scope": row.scopes.replace(",", " "),
     }
 
-
-# ── Grant management (user-facing) ─────────────────────────────────────────────
-
 @router.get("/grants", response_model=list[GrantResponse])
 async def list_grants(db: DB, current_user: CurrentUser) -> list[GrantResponse]:
     now = datetime.now(timezone.utc)
@@ -316,7 +292,6 @@ async def list_grants(db: DB, current_user: CurrentUser) -> list[GrantResponse]:
         )
         for (t, a) in rows
     ]
-
 
 @router.delete("/grants/{token_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def revoke_grant(token_id: uuid.UUID, db: DB, current_user: CurrentUser) -> None:
