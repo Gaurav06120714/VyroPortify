@@ -28,7 +28,6 @@ from app.models.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 if TYPE_CHECKING:
     from app.models.user import User
 
-
 class Organization(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """A workspace that owns portfolios + resumes + billing."""
 
@@ -38,12 +37,9 @@ class Organization(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
 
     name: Mapped[str] = mapped_column(String(120), nullable=False)
-    # Slug is the public URL component, e.g. /o/<slug>. Lowercased,
-    # hyphen-separated; uniqueness enforced via the index above.
+    
     slug: Mapped[str] = mapped_column(String(120), nullable=False)
 
-    # Billing — copy from user.stripe_customer_id on personal-org backfill
-    # so subscriptions transition cleanly. v2.0.4 switches to per-seat.
     stripe_customer_id: Mapped[str | None] = mapped_column(
         String(255), unique=True, nullable=True, index=True
     )
@@ -57,25 +53,17 @@ class Organization(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         comment="free | pro | enterprise",
     )
 
-    # True when this org was auto-created during the v2.0.5 backfill.
-    # Used by the UI to hide "Invite teammates" CTA for personal orgs and
-    # by billing to allow free-tier seat count (1).
     is_personal: Mapped[bool] = mapped_column(
         nullable=False, server_default="false"
     )
 
-    # ── White-label branding (v3.0.3, enterprise-gated) ──────────────────────
-    # Applied to all portfolios owned by the org's members. Values left NULL
-    # mean "use the template's defaults" — the renderer treats absent values
-    # as fall-through rather than wiping the template look.
     logo_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     primary_color: Mapped[str | None] = mapped_column(String(9), nullable=True)
     accent_color: Mapped[str | None] = mapped_column(String(9), nullable=True)
     font_family: Mapped[str | None] = mapped_column(String(120), nullable=True)
-    # Free-form CSS appended after the template stylesheet. Sanitised on PUT
-    # (no `<script>`, no `<iframe>`, no `@import` to remote URLs).
+    
     custom_css: Mapped[str | None] = mapped_column(Text, nullable=True)
-    # When True the "Powered by VyroPortify" footer is omitted.
+    
     hide_branding: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default="false"
     )
@@ -83,7 +71,6 @@ class Organization(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     memberships: Mapped[list["Membership"]] = relationship(
         back_populates="organization", cascade="all, delete-orphan"
     )
-
 
 class Membership(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """User ↔ Organization edge with a role."""
@@ -107,8 +94,7 @@ class Membership(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
     )
-    # Role: owner | admin | editor | viewer. RBAC policy lives in
-    # app.core.authz (v2.0.1).
+    
     role: Mapped[str] = mapped_column(
         String(20),
         nullable=False,
