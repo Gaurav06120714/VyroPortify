@@ -14,14 +14,12 @@ from app.workers.celery_app import celery_app
 
 logger = logging.getLogger(__name__)
 
-
 _TEMPLATE_FACTORIES = {
     "welcome": email_service.welcome,
     "portfolio_published": email_service.portfolio_published,
     "plan_changed": email_service.plan_changed,
     "payment_failed": email_service.payment_failed,
 }
-
 
 @celery_app.task(
     name="email.send",
@@ -42,7 +40,7 @@ def send_email_task(*, to: str, template_name: str, params: dict[str, Any]) -> b
     try:
         template = factory(**params)
     except TypeError as exc:
-        # Bad call site — log loudly, don't retry, don't crash the worker.
+        
         logger.error(
             "send_email_task bad params template=%s params=%s err=%s",
             template_name,
