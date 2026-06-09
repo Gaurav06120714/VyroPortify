@@ -5,7 +5,6 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
-
 class OrganizationCreate(BaseModel):
     name: str = Field(min_length=2, max_length=120)
     slug: str | None = Field(
@@ -13,7 +12,6 @@ class OrganizationCreate(BaseModel):
         max_length=120,
         description="Optional; auto-generated from name if omitted.",
     )
-
 
 class OrganizationResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -25,7 +23,6 @@ class OrganizationResponse(BaseModel):
     is_personal: bool
     created_at: datetime
 
-
 class MembershipResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -34,7 +31,6 @@ class MembershipResponse(BaseModel):
     user_id: uuid.UUID
     role: str
     created_at: datetime
-
 
 class OrganizationWithRole(BaseModel):
     """Returned by /me/organizations — the user's orgs + their role in each."""
@@ -45,13 +41,11 @@ class OrganizationWithRole(BaseModel):
     slug: str
     plan: str
     is_personal: bool
-    role: str  # role of the *current* user in this org
-
+    role: str  
 
 class MembershipInvite(BaseModel):
     email: str = Field(min_length=3, max_length=320)
     role: str = Field(pattern="^(admin|editor|viewer)$")
-
 
 class MembershipRoleUpdate(BaseModel):
     role: str = Field(pattern="^(owner|admin|editor|viewer)$")
