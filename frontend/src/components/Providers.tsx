@@ -12,13 +12,11 @@ import { initSentry, setUser, clearUser } from "@/lib/sentry";
 export default function Providers({ children }: { children: React.ReactNode }) {
   const { user, isLoaded } = useUser();
 
-  // Initialize analytics & error tracking on mount
   useEffect(() => {
     initPostHog();
     initSentry();
   }, []);
 
-  // Identify user when auth state changes
   useEffect(() => {
     if (!isLoaded) return;
 
@@ -42,7 +40,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         richColors
         closeButton
         toastOptions={{
-          // Apply our token-based styling on top of the sonner default.
+          
           className: "border border-[var(--border)]",
         }}
       />
