@@ -70,14 +70,14 @@ export default function DashboardPage() {
         setPortfolioCount(res.total);
         setTotalViews(res.items.reduce((sum, p) => sum + (p.views ?? 0), 0));
       } catch {
-        // non-critical — leave as null
+        
       }
     })();
   }, [getToken]);
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
-      {/* Greeting */}
+      {}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -89,7 +89,7 @@ export default function DashboardPage() {
         </p>
       </motion.div>
 
-      {/* Hero CTA — AI Resume Builder */}
+      {}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -99,7 +99,7 @@ export default function DashboardPage() {
           href="/dashboard/build-resume"
           className="group relative flex items-center justify-between overflow-hidden rounded-2xl border border-[var(--pf-border-hover)] bg-gradient-to-r from-[var(--pf-surface)] to-[#0f0f1a] p-6 transition-all hover:border-[var(--pf-border-hover)] hover:shadow-[0_0_40px_var(--pf-accent-subtle)]"
         >
-          {/* Background glow */}
+          {}
           <div className="pointer-events-none absolute right-0 top-0 h-48 w-48 rounded-full bg-[var(--pf-accent)] opacity-5 blur-3xl" />
 
           <div className="flex items-center gap-4">
@@ -122,7 +122,7 @@ export default function DashboardPage() {
         </Link>
       </motion.div>
 
-      {/* Stat cards */}
+      {}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -134,7 +134,7 @@ export default function DashboardPage() {
         <StatCard icon={<Zap className="h-5 w-5" />} label="Plan" value={plan === "pro" ? "Pro" : "Free"} accent="#ff6b9d" />
       </motion.div>
 
-      {/* Quick actions */}
+      {}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -173,7 +173,7 @@ export default function DashboardPage() {
         </div>
       </motion.div>
 
-      {/* How it works strip */}
+      {}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
