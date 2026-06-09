@@ -52,7 +52,7 @@ function UserAvatar({ name, email }: { name: string; email?: string }) {
         onClick={() => setOpen((o) => !o)}
         className="flex w-full items-center gap-3 rounded-lg p-2 transition-colors hover:bg-[var(--pf-border-subtle)]"
       >
-        {/* Custom avatar — correct initials always */}
+        {}
         <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[var(--pf-accent)] to-[#8b5cf6] text-sm font-bold text-white shadow-sm">
           {initials}
         </div>
@@ -124,7 +124,7 @@ export default function Sidebar() {
 
   return (
     <aside className="flex h-full w-64 flex-col border-r border-[var(--pf-border-dim)] bg-[var(--pf-bg)]">
-      {/* Logo — clicks go to home */}
+      {}
       <Link
         href="/"
         className="flex h-16 items-center gap-2.5 border-b border-[var(--pf-border-dim)] px-6 transition-opacity hover:opacity-80"
@@ -135,7 +135,7 @@ export default function Sidebar() {
         <span className="text-lg font-bold text-[var(--pf-text)]">VyroPortify</span>
       </Link>
 
-      {/* Nav */}
+      {}
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
         {NAV_TOP.map(({ href, label, icon: Icon }) => navLink(href, label, Icon))}
 
@@ -143,7 +143,7 @@ export default function Sidebar() {
 
         {NAV_BOTTOM.map(({ href, label, icon: Icon }) => navLink(href, label, Icon))}
 
-        {/* Pro upgrade nudge */}
+        {}
         {plan === "free" && (
           <Link
             href="/pricing"
@@ -155,13 +155,13 @@ export default function Sidebar() {
         )}
       </nav>
 
-      {/* Theme toggle */}
+      {}
       <div className="border-t border-[var(--pf-border-dim)] px-4 py-3 flex items-center justify-between">
         <span className="text-xs font-medium text-[var(--pf-muted)]">Theme</span>
         <ThemeToggle compact />
       </div>
 
-      {/* User section */}
+      {}
       <div className="border-t border-[var(--pf-border-dim)] p-3">
         <UserAvatar
           name={displayName}
