@@ -48,8 +48,6 @@ from starlette.requests import Request
 
 logger = logging.getLogger(__name__)
 
-# ── Configuration ─────────────────────────────────────────────────────────────
-
 PROXY_DEPTH: int = int(os.environ.get("PROXY_DEPTH", "1"))
 """
 Number of trusted proxy hops in front of this service.
@@ -70,9 +68,6 @@ IP_HASH_SALT: str = os.environ.get(
    Generate in production with:  python -c "import secrets; print(secrets.token_hex(32))"
 """
 
-# ── Privacy-preserving hashing ────────────────────────────────────────────────
-
-
 def _hash_for_log(value: str) -> str:
     """HMAC-SHA256 of value with IP_HASH_SALT, truncated to 16 hex chars.
 
@@ -85,10 +80,6 @@ def _hash_for_log(value: str) -> str:
         value.encode(),
         hashlib.sha256,
     ).hexdigest()[:16]
-
-
-# ── Proxy-aware IP extraction ─────────────────────────────────────────────────
-
 
 def _extract_client_ip(request: Request) -> str:
     """
@@ -105,12 +96,12 @@ def _extract_client_ip(request: Request) -> str:
 
     if xff:
         ips = [ip.strip() for ip in xff.split(",") if ip.strip()]
-        # clientIdx: strip our proxy hops from the right, take the next one left
+        
         client_idx = len(ips) - PROXY_DEPTH - 1
         if client_idx >= 0 and ips[client_idx]:
             return _sanitise_ip(ips[client_idx])
         if ips:
-            return _sanitise_ip(ips[0])  # fewer hops than expected (dev/direct)
+            return _sanitise_ip(ips[0])  
 
     xri: str | None = request.headers.get("x-real-ip")
     if xri:
@@ -121,7 +112,6 @@ def _extract_client_ip(request: Request) -> str:
 
     return "0.0.0.0"
 
-
 def _sanitise_ip(ip: str) -> str:
     """Strip IPv6 zone IDs and validate basic IP format."""
     clean = ip.split("%")[0].lower().strip()
@@ -130,10 +120,6 @@ def _sanitise_ip(ip: str) -> str:
         return clean
     return "0.0.0.0"
 
-
-# ── Key functions ─────────────────────────────────────────────────────────────
-
-
 def get_client_ip(request: Request) -> str:
     """SlowAPI key function: returns real client IP (proxy-aware).
 
@@ -141,7 +127,6 @@ def get_client_ip(request: Request) -> str:
     """
     ip = _extract_client_ip(request)
     return ip
-
 
 def get_login_key(request: Request) -> str:
     """
@@ -158,7 +143,7 @@ def get_login_key(request: Request) -> str:
     """
     ip = _extract_client_ip(request)
     try:
-        # request.state.email is set by the login route before calling the limiter
+        
         email: str = getattr(request.state, "login_email", "") or ""
         if email:
             email_hash = _hash_for_log(email.lower())
@@ -166,10 +151,6 @@ def get_login_key(request: Request) -> str:
     except Exception:
         pass
     return ip
-
-
-# ── Security event logger ─────────────────────────────────────────────────────
-
 
 def log_security_event(
     request: Request,
@@ -186,7 +167,7 @@ def log_security_event(
       - optional extra dict (must NOT contain passwords, tokens, or email text)
     """
     ip = _extract_client_ip(request)
-    path = str(request.url.path)  # intentionally omit query string
+    path = str(request.url.path)  
 
     log_record: dict = {
         "security_event": event,
@@ -196,7 +177,7 @@ def log_security_event(
         "user_agent": (request.headers.get("user-agent", "none") or "none")[:250],
     }
     if extra:
-        # Validate that caller is not accidentally passing sensitive fields
+        
         _FORBIDDEN_EXTRA_KEYS = {"password", "token", "email", "secret", "key", "hash"}
         for k in extra:
             if k.lower() in _FORBIDDEN_EXTRA_KEYS:
@@ -209,24 +190,18 @@ def log_security_event(
 
     logger.warning("[security] %s %s", event, log_record)
 
-
-# ── SlowAPI Limiter (singleton) ───────────────────────────────────────────────
-# Using Redis storage so limits persist across Uvicorn worker restarts and
-# work correctly in multi-process deployments (e.g., gunicorn with multiple workers).
-
 try:
-    from limits.storage import RedisStorage  # type: ignore[import]
+    from limits.storage import RedisStorage  
     _storage_uri = REDIS_URL
     limiter = Limiter(
         key_func=get_client_ip,
         default_limits=["200/minute"],
         storage_uri=_storage_uri,
-        strategy="moving-window",  # sliding window — more accurate than fixed window
+        strategy="moving-window",  
     )
     logger.info("SlowAPI limiter initialised with Redis storage: %s", REDIS_URL.split("@")[-1])
 except Exception as exc:
-    # Fall back to in-memory if Redis is unavailable at startup.
-    # This is acceptable for development; in production Redis should always be up.
+    
     logger.warning(
         "Redis unavailable for rate limiter (%s) — falling back to in-memory. "
         "Multi-instance rate limits will NOT be shared.",
