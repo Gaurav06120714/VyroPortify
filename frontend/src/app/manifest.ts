@@ -9,13 +9,12 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: "/?source=pwa",
     scope: "/",
     display: "standalone",
-    // v2.2.1 — Clarity-palette colors so the install splash matches
-    // the light-mode-only build that landed in v1.7.
+    
     background_color: "#ffffff",
     theme_color: "#2563eb",
     orientation: "portrait",
     categories: ["productivity", "business"],
-    // Shortcuts surface deep links from the home-screen long-press menu.
+    
     shortcuts: [
       {
         name: "Builder",
