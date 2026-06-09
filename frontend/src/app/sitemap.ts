@@ -11,7 +11,7 @@ interface PublicPortfolio {
 async function getPublicPortfolios(): Promise<PublicPortfolio[]> {
   try {
     const res = await fetch(`${API_URL}/portfolio/sitemap`, {
-      next: { revalidate: 3600 }, // refresh hourly
+      next: { revalidate: 3600 }, 
     });
     if (!res.ok) return [];
     return res.json();
