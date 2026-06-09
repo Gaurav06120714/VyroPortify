@@ -5,8 +5,6 @@ import { cn } from "@/lib/utils";
 
 export type InputProps = React.InputHTMLAttributes<HTMLInputElement>;
 
-// Single input primitive. Replaces the per-page <Field> reimplementations
-// in cover-letter and build-resume pages.
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ className, ...props }, ref) => (
     <input
