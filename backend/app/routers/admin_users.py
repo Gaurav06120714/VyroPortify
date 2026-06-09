@@ -30,7 +30,6 @@ router = APIRouter(prefix="/admin", tags=["Admin"])
 
 _HEADERS = ["Full Name", "Email", "Mobile Number", "Registered At (UTC)"]
 
-
 async def _require_platform_owner(db, current_user) -> None:
     is_owner = await db.scalar(
         select(Membership.id).where(
@@ -43,11 +42,9 @@ async def _require_platform_owner(db, current_user) -> None:
             detail="Owner role required for user export.",
         )
 
-
 async def _fetch_users(db) -> list[User]:
     result = await db.execute(select(User).order_by(User.created_at))
     return list(result.scalars().all())
-
 
 def _row(u: User) -> list[str]:
     return [
@@ -56,7 +53,6 @@ def _row(u: User) -> list[str]:
         u.phone_number or "",
         u.created_at.strftime("%Y-%m-%d %H:%M:%S") if isinstance(u.created_at, datetime) else "",
     ]
-
 
 @router.get("/users.csv")
 async def export_users_csv(db: DB, current_user: CurrentUser) -> StreamingResponse:
@@ -81,13 +77,11 @@ async def export_users_csv(db: DB, current_user: CurrentUser) -> StreamingRespon
         },
     )
 
-
 @router.get("/users.xlsx")
 async def export_users_xlsx(db: DB, current_user: CurrentUser) -> StreamingResponse:
     await _require_platform_owner(db, current_user)
     users = await _fetch_users(db)
 
-    # Lazy import keeps the cold-start lean for environments not using the export.
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill
 
@@ -106,7 +100,6 @@ async def export_users_xlsx(db: DB, current_user: CurrentUser) -> StreamingRespo
         for c, val in enumerate(_row(u), start=1):
             ws.cell(row=r, column=c, value=val)
 
-    # Reasonable column widths
     for col_letter, width in zip("ABCD", (28, 36, 22, 22), strict=True):
         ws.column_dimensions[col_letter].width = width
     ws.freeze_panes = "A2"
