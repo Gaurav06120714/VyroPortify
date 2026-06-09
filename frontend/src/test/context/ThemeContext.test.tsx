@@ -1,15 +1,3 @@
-/**
- * Tests for ThemeContext (light-mode-only build).
- *
- * B7 rewrite — the original suite exercised setMode("dark") /
- * setMode("system") which were silently no-op'd in the light-only
- * commit. Tests passed, asserted nothing useful. This rewrite covers
- * the actual contract of the post-lock-down context: mode is always
- * "light", setMode is a no-op that doesn't break consumers, the
- * palette axis is the live knob, and persistence + html attributes
- * reflect that.
- */
-
 import React from "react";
 import { describe, it, expect, beforeEach } from "vitest";
 import { render, screen, act } from "@testing-library/react";
@@ -71,7 +59,7 @@ describe("ThemeContext (light-only)", () => {
     await act(async () => {
       screen.getByTestId("setmode-dark").click();
     });
-    // Still light. The button click must not have changed anything.
+    
     expect(screen.getByTestId("mode").textContent).toBe("light");
     expect(screen.getByTestId("resolved").textContent).toBe("light");
     expect(document.documentElement.classList.contains("dark")).toBe(false);
