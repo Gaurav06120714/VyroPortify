@@ -9,8 +9,6 @@ interface EmptyStateProps {
   className?: string;
 }
 
-// Used on Portfolios, Templates, Analytics when the user has no items yet.
-// Pattern: muted icon, headline, one-line description, single primary CTA.
 export function EmptyState({
   icon: Icon,
   title,
