@@ -10,7 +10,7 @@ interface Command {
   id: string;
   title: string;
   hint?: string;
-  // Either a route to navigate to or a custom action.
+  
   href?: string;
   action?: () => void;
   keywords?: string[];
@@ -38,9 +38,6 @@ function score(cmd: Command, q: string): number {
   return 0;
 }
 
-// Lightweight Cmd-K palette. Avoids the cmdk dep — we only need a filtered
-// list, keyboard nav, and Enter to fire. The shortcut to open is registered
-// globally; the palette itself owns ↑/↓/Enter/Escape while open.
 export function CommandPalette({ extra = [] }: { extra?: Command[] }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -66,7 +63,7 @@ export function CommandPalette({ extra = [] }: { extra?: Command[] }) {
     if (open) {
       setQ("");
       setActiveIdx(0);
-      // Defer focus so the dialog has mounted.
+      
       setTimeout(() => inputRef.current?.focus(), 0);
     }
   }, [open]);
