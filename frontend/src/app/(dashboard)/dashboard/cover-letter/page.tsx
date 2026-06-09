@@ -41,10 +41,7 @@ export default function CoverLetterPage() {
       setLetter(res.cover_letter);
       toast.success("Cover letter generated!");
     } catch (err) {
-      // UX-06: surface the real reason instead of a generic toast.
-      // PLAN_LIMIT_EXCEEDED is the most common 403 here (cover letter
-      // is Pro-gated); the backend returns the structured error from
-      // PortifyBaseException so we can read .detail directly.
+      
       if (err instanceof ApiError && err.status === 403) {
         toast.error("Cover letter requires the Pro plan.", {
           description: "Upgrade in Settings → Billing to use AI cover letters.",
@@ -69,7 +66,7 @@ export default function CoverLetterPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header */}
+      {}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--pf-accent-soft)]">
@@ -83,7 +80,7 @@ export default function CoverLetterPage() {
       </motion.div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Form */}
+        {}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -116,7 +113,7 @@ export default function CoverLetterPage() {
             />
           </div>
 
-          {/* Tone picker */}
+          {}
           <div>
             <label className="mb-2 block text-xs font-medium text-[var(--pf-muted)]">Tone</label>
             <div className="grid grid-cols-3 gap-2">
@@ -156,7 +153,7 @@ export default function CoverLetterPage() {
           </button>
         </motion.div>
 
-        {/* Output */}
+        {}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
