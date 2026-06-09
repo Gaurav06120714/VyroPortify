@@ -1,14 +1,8 @@
-/**
- * E2E tests for the billing/pricing flow.
- *
- * All Stripe and API calls are mocked via page.route().
- */
-
 import { test, expect } from "@playwright/test";
 
 test.describe("Billing", () => {
   test.beforeEach(async ({ page }) => {
-    // Mock billing status
+    
     await page.route("**/api/v1/billing/status", (route) => {
       route.fulfill({
         status: 200,
@@ -22,7 +16,6 @@ test.describe("Billing", () => {
       });
     });
 
-    // Mock checkout session creation
     await page.route("**/api/v1/billing/create-checkout", (route) => {
       route.fulfill({
         status: 201,
@@ -33,7 +26,6 @@ test.describe("Billing", () => {
       });
     });
 
-    // Mock auth
     await page.route("**/api/v1/auth/me", (route) => {
       route.fulfill({
         status: 200,
@@ -57,9 +49,9 @@ test.describe("Billing", () => {
 
   test("pricing page renders pricing content", async ({ page }) => {
     await page.goto("/pricing");
-    // Should show some pricing-related text
+    
     const text = await page.locator("body").innerText();
-    // Page loaded and has some content
+    
     expect(text.length).toBeGreaterThan(10);
   });
 
@@ -97,19 +89,17 @@ test.describe("Billing", () => {
 
     await page.goto("/pricing");
 
-    // Look for an upgrade / Get Pro button and click it
     const upgradeBtn = page
       .locator("button, a", { hasText: /get pro|upgrade|subscribe|start/i })
       .first();
 
     if (await upgradeBtn.count() > 0 && await upgradeBtn.isVisible()) {
       await upgradeBtn.click();
-      // After click, either a redirect occurs or checkout modal/redirect
+      
       await page.waitForTimeout(500);
-      // The intent is to test that the button exists and is clickable
+      
     }
 
-    // Whether or not checkout was called, the page should not have crashed
     await expect(page.locator("body")).toBeVisible();
   });
 });
