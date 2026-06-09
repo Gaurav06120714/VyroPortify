@@ -1,14 +1,8 @@
-/**
- * E2E tests for the AI Resume Builder multi-step form.
- *
- * All API calls are mocked via page.route().
- */
-
 import { test, expect } from "@playwright/test";
 
 test.describe("Resume Builder", () => {
   test.beforeEach(async ({ page }) => {
-    // Mock the build endpoint
+    
     await page.route("**/api/v1/resume/build", (route) => {
       route.fulfill({
         status: 201,
@@ -20,7 +14,6 @@ test.describe("Resume Builder", () => {
       });
     });
 
-    // Mock suggest-skills
     await page.route("**/api/v1/resume/suggest-skills", (route) => {
       route.fulfill({
         status: 200,
@@ -30,7 +23,6 @@ test.describe("Resume Builder", () => {
       });
     });
 
-    // Mock portfolio generate
     await page.route("**/api/v1/portfolio/generate", (route) => {
       route.fulfill({
         status: 202,
@@ -42,7 +34,6 @@ test.describe("Resume Builder", () => {
       });
     });
 
-    // Mock auth
     await page.route("**/api/v1/auth/me", (route) => {
       route.fulfill({
         status: 200,
@@ -66,7 +57,7 @@ test.describe("Resume Builder", () => {
 
   test("builder page renders form elements", async ({ page }) => {
     await page.goto("/dashboard/build-resume");
-    // Some form-like elements should be present
+    
     const inputs = page.locator("input, textarea, button");
     const count = await inputs.count();
     expect(count).toBeGreaterThan(0);
@@ -79,7 +70,6 @@ test.describe("Resume Builder", () => {
     await page.goto("/dashboard/build-resume");
     await page.waitForTimeout(500);
 
-    // Filter out known non-critical Clerk/Next.js hydration warnings
     const criticalErrors = jsErrors.filter(
       (e) => !e.includes("Hydration") && !e.includes("Warning"),
     );
@@ -93,7 +83,7 @@ test.describe("Resume Builder", () => {
 
     if (await nextButton.count() > 0 && await nextButton.isEnabled()) {
       await nextButton.click();
-      // Should still be on the builder page (multi-step, not navigation)
+      
       expect(page.url()).toContain("build-resume");
     }
   });
