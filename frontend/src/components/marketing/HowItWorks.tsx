@@ -55,10 +55,10 @@ export default function HowItWorks() {
           </p>
         </div>
 
-        {/* Before / After */}
+        {}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start mb-10">
 
-          {/* Before — raw resume */}
+          {}
           <div className="rounded-2xl border border-border bg-card overflow-hidden">
             <div className="flex items-center gap-2 px-5 py-3 border-b border-border bg-muted/20">
               <FileText className="h-4 w-4 text-muted-foreground" />
@@ -69,7 +69,7 @@ export default function HowItWorks() {
             </pre>
           </div>
 
-          {/* After — generated portfolio copy */}
+          {}
           <div className="rounded-2xl border border-primary/30 bg-card overflow-hidden">
             <div className="flex items-center gap-2 px-5 py-3 border-b border-primary/20 bg-primary/5">
               <CheckCircle2 className="h-4 w-4 text-primary" />
@@ -95,7 +95,7 @@ export default function HowItWorks() {
           </div>
         </div>
 
-        {/* Steps strip */}
+        {}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {[
             { n: "01", title: "Paste your resume", body: "Upload a PDF or fill out 12 questions. Takes under 5 minutes." },
