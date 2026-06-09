@@ -17,18 +17,6 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8001/api/v1
 const POLL_INTERVAL_MS = 1200;
 const POLL_TIMEOUT_MS = 60_000;
 
-/**
- * v2.3.3 — One-tap resume PDF export.
- *
- * Flow:
- *   1. POST /resume/{id}/export-pdf → returns export_id.
- *      If `cached: true`, fetch the URL immediately and download.
- *      Otherwise enter the polling loop.
- *   2. Poll GET /resume/exports/{id} every 1.2s until status==completed
- *      (or 60s timeout). Show "Generating PDF…" toast while waiting.
- *   3. Open the returned presigned URL in a new tab so the browser
- *      handles the download natively (preserves Content-Disposition).
- */
 export function DownloadPdfButton({
   resumeId,
   templateId = "modern",
@@ -59,7 +47,6 @@ export function DownloadPdfButton({
         cached?: boolean;
       };
 
-      // Poll until ready or timeout.
       const exportId = start.export_id;
       const deadline = Date.now() + POLL_TIMEOUT_MS;
       let downloadUrl: string | null = null;
@@ -85,7 +72,6 @@ export function DownloadPdfButton({
         throw new Error("Timed out waiting for the PDF — please try again.");
       }
 
-      // New tab so the browser handles Content-Disposition: attachment.
       window.open(downloadUrl, "_blank", "noopener,noreferrer");
       toast.success(start.cached ? "PDF ready (cached)" : "PDF ready", {
         id: toastId,
