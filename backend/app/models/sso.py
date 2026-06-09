@@ -13,7 +13,6 @@ from app.models.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 if TYPE_CHECKING:
     from app.models.organization import Organization
 
-
 class SSOConfig(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """SAML 2.0 SP configuration per organization. One row per org."""
 
@@ -26,13 +25,13 @@ class SSOConfig(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         nullable=False,
         index=True,
     )
-    # IdP metadata
+    
     idp_entity_id: Mapped[str] = mapped_column(String(255), nullable=False)
     idp_sso_url: Mapped[str] = mapped_column(Text, nullable=False)
     idp_x509_cert: Mapped[str] = mapped_column(Text, nullable=False)
-    # SP-side
+    
     sp_entity_id: Mapped[str] = mapped_column(String(255), nullable=False)
-    # Email domain that must be claimed in SAML NameID — gates which users this org owns
+    
     email_domain: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
     enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
 
