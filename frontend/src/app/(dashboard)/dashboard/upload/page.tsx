@@ -77,7 +77,7 @@ function UploadPageInner() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-8">
-      {/* Header */}
+      {}
       <div>
         <h1 className="text-2xl font-bold text-[var(--pf-text)]">Upload Resume</h1>
         <p className="mt-1 text-[var(--pf-muted)]">
@@ -85,7 +85,7 @@ function UploadPageInner() {
         </p>
       </div>
 
-      {/* Steps */}
+      {}
       <div className="flex items-center gap-2">
         {STEP_LABELS.map((label, i) => {
           const done = i < stepIdx;
@@ -109,7 +109,7 @@ function UploadPageInner() {
         })}
       </div>
 
-      {/* Step panels */}
+      {}
       <AnimatePresence mode="wait">
         {stage === "upload" && (
           <motion.div
@@ -132,7 +132,7 @@ function UploadPageInner() {
             transition={{ duration: 0.2 }}
             className="space-y-6"
           >
-            {/* Uploaded file badge */}
+            {}
             <div className="flex items-center gap-2 rounded-xl border border-[rgba(34,197,94,0.25)] bg-[rgba(34,197,94,0.06)] px-4 py-3">
               <Check className="h-4 w-4 text-green-400 flex-shrink-0" />
               <div>
@@ -141,7 +141,7 @@ function UploadPageInner() {
               </div>
             </div>
 
-            {/* Template picker */}
+            {}
             <div>
               <p className="mb-3 text-sm font-semibold uppercase tracking-wider text-[var(--pf-muted)]">
                 Choose a template
@@ -157,7 +157,7 @@ function UploadPageInner() {
                         : "border-[var(--pf-accent-soft)] hover:border-[var(--pf-border-hover)]"
                     }`}
                   >
-                    {/* Preview */}
+                    {}
                     <div className="relative h-20" style={{ background: t.bg }}>
                       <div className="absolute inset-0 flex flex-col gap-1.5 p-2.5">
                         <div className="h-2 w-3/4 rounded-full opacity-50" style={{ background: t.accent }} />
@@ -191,7 +191,7 @@ function UploadPageInner() {
               </div>
             </div>
 
-            {/* Generate button */}
+            {}
             <button
               onClick={handleGenerate}
               disabled={generating}
