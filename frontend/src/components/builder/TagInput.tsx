@@ -22,7 +22,7 @@ export default function TagInput({
   const add = (raw: string) => {
     const trimmed = raw.trim();
     if (!trimmed || tags.length >= maxTags) return;
-    // Support comma-separated input
+    
     const pieces = trimmed.split(",").map((s) => s.trim()).filter(Boolean);
     const fresh = pieces.filter((p) => !tags.map((t) => t.toLowerCase()).includes(p.toLowerCase()));
     if (fresh.length) onChange([...tags, ...fresh]);
