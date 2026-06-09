@@ -26,7 +26,6 @@ export function Skeleton({ className, style }: SkeletonProps) {
   );
 }
 
-// ── Portfolio card skeleton ────────────────────────────────────────────────────
 export function PortfolioCardSkeleton() {
   return (
     <div className="rounded-2xl border border-[var(--pf-border-dim)] bg-[var(--pf-surface)] p-5 space-y-4">
@@ -41,7 +40,6 @@ export function PortfolioCardSkeleton() {
   );
 }
 
-// ── Dashboard stats skeleton ───────────────────────────────────────────────────
 export function StatCardSkeleton() {
   return (
     <div className="rounded-xl border border-[var(--pf-border-dim)] bg-[var(--pf-surface)] p-5 space-y-3">
@@ -52,7 +50,6 @@ export function StatCardSkeleton() {
   );
 }
 
-// ── Billing section skeleton ───────────────────────────────────────────────────
 export function BillingSkeleton() {
   return (
     <div className="space-y-4">
@@ -75,7 +72,6 @@ export function BillingSkeleton() {
   );
 }
 
-// ── Resume list skeleton ───────────────────────────────────────────────────────
 export function ResumeListSkeleton() {
   return (
     <div className="space-y-3">
@@ -96,7 +92,6 @@ export function ResumeListSkeleton() {
   );
 }
 
-// ── Table row skeleton ─────────────────────────────────────────────────────────
 export function TableRowSkeleton({ cols = 4 }: { cols?: number }) {
   return (
     <div className="flex items-center gap-4 px-4 py-3 border-b border-[var(--pf-border-subtle)]">
