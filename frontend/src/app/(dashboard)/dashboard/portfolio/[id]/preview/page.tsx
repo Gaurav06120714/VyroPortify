@@ -40,7 +40,7 @@ export default function PortfolioPreviewPage({ params }: Props) {
     try {
       const token = await getToken();
       if (!token) return;
-      // getPortfolioStatus returns the status shape; cast for full Portfolio fields
+      
       const res = (await getPortfolioStatus(id, token)) as unknown as Portfolio;
       setPortfolio(res);
     } catch {
@@ -95,14 +95,14 @@ export default function PortfolioPreviewPage({ params }: Props) {
 
   return (
     <div className="flex h-full flex-col gap-0 -m-6">
-      {/* Toolbar */}
+      {}
       <motion.div
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.2 }}
         className="flex items-center gap-3 border-b border-[var(--pf-accent-soft)] bg-[var(--pf-bg)] px-4 py-3 flex-shrink-0"
       >
-        {/* Back */}
+        {}
         <button
           onClick={() => router.push("/dashboard/portfolios")}
           className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm text-[var(--pf-muted)] hover:text-[var(--pf-text)] transition-colors"
@@ -113,12 +113,12 @@ export default function PortfolioPreviewPage({ params }: Props) {
 
         <div className="h-4 w-px bg-[var(--pf-accent-soft)]" />
 
-        {/* Slug / title */}
+        {}
         <span className="flex-1 truncate text-sm font-medium text-[var(--pf-text)]">
           {portfolio.slug || id}
         </span>
 
-        {/* Viewport toggle */}
+        {}
         <div className="flex items-center rounded-lg border border-[var(--pf-accent-soft)] bg-[var(--pf-surface)] p-0.5">
           {(["desktop", "mobile"] as ViewMode[]).map((m) => (
             <button
@@ -139,7 +139,7 @@ export default function PortfolioPreviewPage({ params }: Props) {
           ))}
         </div>
 
-        {/* Refresh */}
+        {}
         <button
           onClick={fetchPortfolio}
           className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--pf-muted)] hover:bg-[var(--pf-border-subtle)] hover:text-[var(--pf-text)] transition-colors"
@@ -148,7 +148,7 @@ export default function PortfolioPreviewPage({ params }: Props) {
           <RefreshCw className="h-4 w-4" />
         </button>
 
-        {/* Copy link */}
+        {}
         <button
           onClick={handleCopy}
           disabled={!publicUrl}
@@ -158,7 +158,7 @@ export default function PortfolioPreviewPage({ params }: Props) {
           {copied ? "Copied!" : "Copy link"}
         </button>
 
-        {/* Open in new tab */}
+        {}
         {portfolio.html_url && (
           <a
             href={portfolio.html_url}
@@ -171,7 +171,7 @@ export default function PortfolioPreviewPage({ params }: Props) {
           </a>
         )}
 
-        {/* Publish toggle */}
+        {}
         <button
           onClick={handleTogglePublish}
           disabled={publishing || portfolio.status !== "published"}
@@ -192,7 +192,7 @@ export default function PortfolioPreviewPage({ params }: Props) {
         </button>
       </motion.div>
 
-      {/* iFrame area */}
+      {}
       <div className="flex flex-1 items-start justify-center overflow-auto bg-[#080810] p-4">
         {portfolio.html_url ? (
           <motion.div
