@@ -35,12 +35,10 @@ ALLOWED_EVENTS = {
     "*",
 }
 
-
 class CreateEndpointRequest(BaseModel):
     url: HttpUrl
     events: list[str] = Field(default_factory=list)
     description: str | None = Field(default=None, max_length=255)
-
 
 class CreateEndpointResponse(BaseModel):
     id: uuid.UUID
@@ -49,8 +47,7 @@ class CreateEndpointResponse(BaseModel):
     description: str | None
     enabled: bool
     created_at: datetime
-    secret: str  # only returned on creation
-
+    secret: str  
 
 class EndpointResponse(BaseModel):
     id: uuid.UUID
@@ -61,7 +58,6 @@ class EndpointResponse(BaseModel):
     last_delivery_at: datetime | None
     created_at: datetime
 
-
 class DeliveryResponse(BaseModel):
     id: uuid.UUID
     event: str
@@ -70,7 +66,6 @@ class DeliveryResponse(BaseModel):
     error: str | None
     delivered_at: datetime | None
     created_at: datetime
-
 
 @router.post("", response_model=CreateEndpointResponse, status_code=status.HTTP_201_CREATED)
 async def create_endpoint(
@@ -104,7 +99,6 @@ async def create_endpoint(
         secret=secret,
     )
 
-
 @router.get("", response_model=list[EndpointResponse])
 async def list_endpoints(db: DB, current_user: CurrentUser) -> list[EndpointResponse]:
     result = await db.execute(
@@ -125,7 +119,6 @@ async def list_endpoints(db: DB, current_user: CurrentUser) -> list[EndpointResp
         for e in result.scalars().all()
     ]
 
-
 @router.delete("/{endpoint_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_endpoint(endpoint_id: uuid.UUID, db: DB, current_user: CurrentUser) -> None:
     result = await db.execute(
@@ -138,7 +131,6 @@ async def delete_endpoint(endpoint_id: uuid.UUID, db: DB, current_user: CurrentU
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Endpoint not found")
     await db.delete(ep)
     await db.commit()
-
 
 @router.get("/{endpoint_id}/deliveries", response_model=list[DeliveryResponse])
 async def list_deliveries(
@@ -166,7 +158,6 @@ async def list_deliveries(
         for d in result.scalars().all()
     ]
 
-
 @router.get("/events")
 async def list_event_catalog() -> dict:
     """v3.3.0 — Public catalog of every event type a subscriber can choose."""
@@ -182,7 +173,6 @@ async def list_event_catalog() -> dict:
         "signature_scheme": "X-VyroPortify-Signature: t=<unix>,v1=<hex_hmac_sha256> over `{t}.{body}`",
         "replay_window_seconds": 300,
     }
-
 
 @router.post("/{endpoint_id}/deliveries/{delivery_id}/replay", status_code=status.HTTP_202_ACCEPTED)
 async def replay_delivery(
@@ -211,7 +201,6 @@ async def replay_delivery(
         data=(delivery.payload or {}).get("data", {}),
     )
     return {"enqueued": True, "replayed_delivery_id": str(delivery.id)}
-
 
 @router.post("/{endpoint_id}/test", status_code=status.HTTP_202_ACCEPTED)
 async def test_endpoint(endpoint_id: uuid.UUID, db: DB, current_user: CurrentUser) -> dict:
