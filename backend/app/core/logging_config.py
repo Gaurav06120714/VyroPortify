@@ -23,19 +23,15 @@ from typing import Any
 
 from app.core.config import settings
 
-
-# ── JSON formatter (production) ────────────────────────────────────────────────
-
 _PII_KEYS = frozenset({
     "email", "password", "hashed_password", "api_key", "token",
     "access_token", "refresh_token", "secret", "card_number",
 })
 
-
 class _JSONFormatter(logging.Formatter):
     """Emit a single JSON object per log record."""
 
-    def format(self, record: logging.LogRecord) -> str:  # noqa: A003
+    def format(self, record: logging.LogRecord) -> str:  
         from app.core.correlation import get_correlation_id
 
         payload: dict[str, Any] = {
@@ -48,7 +44,6 @@ class _JSONFormatter(logging.Formatter):
             "correlation_id": get_correlation_id(),
         }
 
-        # Attach extra fields passed via extra={} but scrub PII
         for key, value in record.__dict__.items():
             if key in (
                 "args", "asctime", "created", "exc_info", "exc_text",
@@ -68,17 +63,11 @@ class _JSONFormatter(logging.Formatter):
 
         return json.dumps(payload, default=str)
 
-
-# ── Human-readable formatter (development) ─────────────────────────────────────
-
 class _DevFormatter(logging.Formatter):
     fmt = "%(asctime)s [%(levelname)s] %(name)s — %(message)s"
 
     def __init__(self) -> None:
         super().__init__(self.fmt, datefmt="%H:%M:%S")
-
-
-# ── Public API ─────────────────────────────────────────────────────────────────
 
 def configure_logging() -> None:
     """Configure root logger with the appropriate formatter.
@@ -87,7 +76,6 @@ def configure_logging() -> None:
     """
     root = logging.getLogger()
 
-    # Guard against double-configuration in tests or reload scenarios
     if getattr(root, "_portify_configured", False):
         return
 
@@ -98,12 +86,10 @@ def configure_logging() -> None:
     handler = logging.StreamHandler()
     handler.setFormatter(formatter)
 
-    # Remove any handlers added by basicConfig or Uvicorn defaults
     root.handlers.clear()
     root.addHandler(handler)
     root.setLevel(logging.DEBUG if settings.DEBUG else logging.INFO)
 
-    # Quiet noisy third-party loggers
     logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
     logging.getLogger("sqlalchemy.engine").setLevel(
         logging.INFO if settings.DB_ECHO_SQL else logging.WARNING
@@ -111,4 +97,4 @@ def configure_logging() -> None:
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("botocore").setLevel(logging.WARNING)
 
-    root._portify_configured = True  # type: ignore[attr-defined]
+    root._portify_configured = True  
