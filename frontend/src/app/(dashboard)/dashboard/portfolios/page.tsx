@@ -121,14 +121,14 @@ export default function PortfoliosPage() {
               key={p.id}
               className="flex items-center gap-4 rounded-xl border border-[var(--pf-accent-soft)] bg-[var(--pf-surface)] p-4"
             >
-              {/* Status dot */}
+              {}
               <div
                 className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
                 style={{ background: STATUS_COLORS[p.status] }}
                 title={p.status}
               />
 
-              {/* Info */}
+              {}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="truncate font-medium text-[var(--pf-text)]">
@@ -152,7 +152,7 @@ export default function PortfoliosPage() {
                 </p>
               </div>
 
-              {/* Actions */}
+              {}
               <div className="flex items-center gap-1">
                 {p.status === "published" && (
                   <button
