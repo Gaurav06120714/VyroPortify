@@ -38,12 +38,11 @@ function BillingPageInner() {
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
 
-  // Handle success redirect from Stripe
   useEffect(() => {
     if (searchParams.get("success") === "1") {
       toast.success("🎉 Welcome to Pro! Your plan has been upgraded.");
       refreshPlan();
-      // Remove query params
+      
       router.replace("/dashboard/settings/billing");
     }
     if (searchParams.get("cancelled") === "1") {
@@ -65,7 +64,7 @@ function BillingPageInner() {
     }
   };
 
-  useEffect(() => { fetchStatus(); }, []); // eslint-disable-line
+  useEffect(() => { fetchStatus(); }, []); 
 
   const handleUpgrade = async () => {
     setCheckoutLoading(true);
@@ -110,7 +109,7 @@ function BillingPageInner() {
         <p className="mt-1 text-[var(--pf-muted)]">Manage your subscription and payment details.</p>
       </div>
 
-      {/* Current plan card */}
+      {}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -148,7 +147,7 @@ function BillingPageInner() {
           {loading && <Loader2 className="h-4 w-4 animate-spin text-[var(--pf-muted)]" />}
         </div>
 
-        {/* Subscription details */}
+        {}
         {status && plan === "pro" && (
           <div className="mt-4 grid grid-cols-2 gap-3">
             <div className="flex items-center gap-2 rounded-lg bg-[var(--pf-border-subtle)] px-3 py-2.5">
@@ -181,7 +180,7 @@ function BillingPageInner() {
         )}
       </motion.div>
 
-      {/* Actions */}
+      {}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -241,7 +240,7 @@ function BillingPageInner() {
           </div>
         )}
 
-        {/* Refresh status */}
+        {}
         <button
           onClick={() => { setLoading(true); fetchStatus(); }}
           className="flex items-center gap-1.5 text-xs text-[var(--pf-muted)] hover:text-[var(--pf-text)] transition-colors"
@@ -250,7 +249,7 @@ function BillingPageInner() {
         </button>
       </motion.div>
 
-      {/* Pro features reminder for free users */}
+      {}
       {plan === "free" && (
         <motion.div
           initial={{ opacity: 0, y: 8 }}
