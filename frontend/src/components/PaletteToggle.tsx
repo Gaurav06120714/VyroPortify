@@ -8,11 +8,6 @@ const OPTIONS: { value: Palette; label: string; hint: string }[] = [
   { value: "clarity", label: "Clarity", hint: "Light blue · clean" },
 ];
 
-/**
- * Palette switcher — orthogonal to the light/dark mode toggle. Place this in
- * the Settings → Appearance section (added by v1.7.2 settings restyle) or
- * anywhere that needs a quick theme flip.
- */
 export function PaletteToggle({ className }: { className?: string }) {
   const { palette, setPalette } = useTheme();
 
