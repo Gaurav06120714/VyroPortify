@@ -1,10 +1,3 @@
-/**
- * Mock for @/lib/api — replaces all API calls with controlled stubs.
- *
- * Usage:
- *   vi.mock('@/lib/api', () => apiMocks)
- */
-
 import { vi } from "vitest";
 import type { UploadResumeResponse } from "@/types";
 
@@ -68,7 +61,6 @@ export const mockSuggestSkills = vi.fn().mockResolvedValue({
   suggestions: ["Docker", "Kubernetes", "AWS"],
 });
 
-/** ApiError class for testing error paths */
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -79,7 +71,6 @@ export class ApiError extends Error {
   }
 }
 
-/** Full mock module — pass this as the factory to vi.mock */
 export const apiMocks = {
   uploadResume: mockUploadResume,
   getResumes: mockGetResumes,
