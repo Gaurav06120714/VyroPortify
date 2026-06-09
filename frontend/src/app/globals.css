@@ -1,24 +1,8 @@
 @import "tailwindcss";
-
-/* Light-mode-only build (Jun 2026).
- *
- * Tailwind v4 defaults the `dark:` variant to @media (prefers-color-scheme: dark),
- * so on a macOS device in dark mode every dark:bg-* / dark:text-* utility
- * fires automatically — that's why the marketing pages still rendered
- * dark even after we removed the .dark class from <html>.
- *
- * Re-binding the dark variant to a class that is NEVER present
- * disables OS-driven dark mode entirely. The .__never__ class is a
- * sentinel; nothing in the codebase applies it. */
 @custom-variant dark (&:is(.__never__));
-
-/* Belt-and-braces: also force color-scheme so native form controls,
- * scrollbars, and the browser chrome use light variants regardless of
- * OS preference. */
 :root, html, body {
   color-scheme: light;
 }
-
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -42,11 +26,8 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
 }
-
 :root {
   --radius: 0.75rem;
-
-  /* ── VyroPortify Dashboard palette — LIGHT ─────────────────────────────── */
   --pf-bg: #f4f4ff;
   --pf-surface: #ffffff;
   --pf-surface2: #eeeeff;
@@ -71,18 +52,8 @@
   --pf-sidebar: #1e1b4b;
   --pf-sidebar-text: #e0e0f0;
   --pf-sidebar-muted: #9090bb;
-
-  /* B19 fix: Aurora needs a defined --pf-cta-warm too. The Hero uses
-   * bg-[var(--pf-cta-warm, var(--pf-accent))] but Tailwind/JIT
-   * arbitrary-value syntax doesn't always honor CSS var fallbacks
-   * inside the comma list — so an undefined --pf-cta-warm yielded
-   * an unstyled background instead of falling through to --pf-accent.
-   * Defining it here mirrors the accent so the Hero CTA stays
-   * on-brand under Aurora. Clarity overrides this with #f59e0b. */
   --pf-cta-warm:        var(--pf-accent);
   --pf-cta-warm-hover:  var(--pf-accent-hover);
-
-  /* Premium Light Palette: Crisp Slate & Electric Indigo */
   --background: #f8fafc;
   --foreground: #0f172a;
   --card: #ffffff;
@@ -100,9 +71,7 @@
   --input: #f1f5f9;
   --ring: #6366f1;
 }
-
 .dark {
-  /* ── VyroPortify Dashboard palette — DARK ──────────────────────────────── */
   --pf-bg: #0d0d14;
   --pf-surface: #13131e;
   --pf-surface2: #16161f;
@@ -127,8 +96,6 @@
   --pf-sidebar: #0d0d14;
   --pf-sidebar-text: #e8e8f0;
   --pf-sidebar-muted: #7777aa;
-
-  /* Premium Dark Palette: Deep Obsidian & Cyber Violet */
   --background: #020617;
   --foreground: #f8fafc;
   --card: #0f172a;
@@ -146,11 +113,8 @@
   --input: #1e293b;
   --ring: #818cf8;
 }
-
 * { box-sizing: border-box; }
-
 html { scroll-behavior: smooth; }
-
 body {
   background: var(--pf-bg);
   color: var(--pf-text);
@@ -161,55 +125,39 @@ body {
   min-height: 100dvh;
   transition: background-color 0.25s ease, color 0.25s ease;
 }
-
-/* Smooth theme transitions on all elements */
 *, *::before, *::after {
   transition-property: background-color, border-color, color, fill, stroke;
   transition-timing-function: ease;
   transition-duration: 0.2s;
 }
-
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-
-/* ── Marketing page helpers ─────────────────────────────────────────────── */
 @keyframes marquee {
   from { transform: translateX(0); }
   to   { transform: translateX(-50%); }
 }
 .animate-marquee { animation: marquee 28s linear infinite; }
 .animate-marquee:hover { animation-play-state: paused; }
-
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
   50%       { transform: translateY(-10px); }
 }
 .animate-float { animation: float 4s ease-in-out infinite; }
-
-.animate-pulse-glow { /* removed glow animation */ }
-
+.animate-pulse-glow {  }
 .animate-shimmer {
   color: #6366f1;
 }
-
-/* Grid texture — removed */
 .bg-grid {
   background-image: none;
 }
-
-/* Radial fade mask — removed */
 .mask-radial-fade {
   mask-image: none;
 }
-
-/* Skeleton shimmer */
 @keyframes skeleton-shimmer {
   0%   { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
-
-/* Accordion animations */
 @keyframes accordion-down {
   from { height: 0; }
   to   { height: var(--radix-accordion-content-height); }
@@ -220,52 +168,32 @@ body {
 }
 .animate-accordion-down { animation: accordion-down 0.22s ease-out; }
 .animate-accordion-up   { animation: accordion-up 0.22s ease-out; }
-
-/* Toast theme */
 [data-sonner-toaster] [data-sonner-toast] {
   --normal-bg: var(--card);
   --normal-border: var(--border);
   --normal-text: var(--foreground);
 }
-
-/* ── v1.3 design tokens ─────────────────────────────────────────────────────
- * Categories that were missing from the original token set. Kept as CSS custom
- * properties so they can be referenced from both Tailwind utility classes
- * (`bg-[var(--pf-elev-1)]`) and inline styles.
- */
 :root {
-  /* Spacing scale — multiples of 4px, matches Tailwind's default. */
   --pf-space-1: 4px;  --pf-space-2: 8px;   --pf-space-3: 12px;
   --pf-space-4: 16px; --pf-space-6: 24px;  --pf-space-8: 32px;
   --pf-space-12: 48px; --pf-space-16: 64px; --pf-space-24: 96px;
-
-  /* Radius scale */
   --pf-radius-sm: 6px; --pf-radius-md: 10px;
   --pf-radius-lg: 14px; --pf-radius-xl: 20px;
-
-  /* Elevation — neutral shadow stack. */
   --pf-elev-1: 0 1px 2px rgba(15,23,42,0.06), 0 1px 1px rgba(15,23,42,0.04);
   --pf-elev-2: 0 4px 8px rgba(15,23,42,0.08), 0 2px 4px rgba(15,23,42,0.05);
   --pf-elev-3: 0 12px 24px rgba(15,23,42,0.10), 0 4px 8px rgba(15,23,42,0.06);
   --pf-elev-4: 0 24px 48px rgba(15,23,42,0.14), 0 12px 24px rgba(15,23,42,0.08);
-
-  /* Z-index scale */
   --pf-z-dropdown: 1000;
   --pf-z-sticky:   1100;
   --pf-z-overlay:  1200;
   --pf-z-modal:    1300;
   --pf-z-popover:  1400;
   --pf-z-toast:    1500;
-
-  /* Motion */
   --pf-duration-fast: 120ms;
   --pf-duration-base: 200ms;
   --pf-duration-slow: 320ms;
   --pf-ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
   --pf-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
-
-  /* Typography scale (v1.7.1 refined). Display sizes tightened to match
-   * Gridlock-style civic-modern look — bold but not shouty. */
   --pf-text-xs:  0.75rem;  --pf-leading-xs:  1rem;
   --pf-text-sm:  0.875rem; --pf-leading-sm:  1.25rem;
   --pf-text-md:  1rem;     --pf-leading-md:  1.5rem;
@@ -276,17 +204,11 @@ body {
   --pf-text-4xl: 2.25rem;  --pf-leading-4xl: 2.5rem;
   --pf-text-display: 3rem; --pf-leading-display: 1.05;
   --pf-text-display-lg: 3.75rem; --pf-leading-display-lg: 1.02;
-
-  /* Letter-spacing scale — used by .text-display-* utilities below. */
   --pf-tracking-tight:  -0.02em;
   --pf-tracking-tighter: -0.035em;
   --pf-tracking-normal: 0;
   --pf-tracking-wide:   0.02em;
 }
-
-/* ── v1.7.1 typography utilities ────────────────────────────────────────────
- * Token-driven heading classes. Use these instead of ad-hoc text-3xl/4xl
- * combos so display rhythm is consistent across pages. */
 .text-display-lg {
   font-size: var(--pf-text-display-lg);
   line-height: var(--pf-leading-display-lg);
@@ -316,16 +238,9 @@ body {
   line-height: var(--pf-leading-2xl);
   font-weight: 600;
 }
-
-/* Enable Inter's stylistic alternates ("a" with the curved tail, "g" with
- * the single-story descender) for a cleaner modern feel. Falls back
- * silently on browsers without OT-feature support. */
 :root, body {
   font-feature-settings: "cv11" 1, "ss01" 1, "ss03" 1;
 }
-
-/* Honor prefers-reduced-motion globally. Animations still fire but with a
- * minimal duration so layout shifts still resolve. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -334,52 +249,28 @@ body {
     scroll-behavior: auto !important;
   }
 }
-
-/* Focus ring — every interactive element should pick this up via focus-visible */
 :where(button, a, input, select, textarea, [role="button"], [tabindex]):focus-visible {
   outline: 2px solid var(--pf-accent);
   outline-offset: 2px;
   border-radius: var(--pf-radius-md);
 }
-
-/* ── v1.7.0 Clarity palette ─────────────────────────────────────────────────
- * Gridlock-inspired clean civic-modern theme. Applied via:
- *   <html data-palette="clarity">
- * Sits on top of the existing light/dark mechanism. When data-palette is
- * absent (or "aurora") the original purple/violet palette wins via :root.
- *
- * Contrast: --pf-text on --pf-bg = 16.1:1 (AAA), --pf-accent on white =
- * 4.86:1 (AA for normal text, AAA for large).
- */
 [data-palette="clarity"] {
-  /* UX-05: surfaces deepened a notch (#fcfcfd → #fafbfc → #eef2f6) so
-   * cards sit above the page instead of disappearing into it; muted
-   * tones bumped one step toward the foreground for AA contrast on
-   * captions and helper text. */
   --pf-bg:              #fcfcfd;
   --pf-surface:         #ffffff;
-  --pf-surface2:        #eef2f6;       /* slate-100 + ~3% indigo wash */
-  --pf-text:            #0b1220;       /* near-black for AAA on white */
-  --pf-text-dim:        #1f2937;       /* slate-800 */
-  --pf-muted:           #475569;       /* slate-600 — AA on white (7.2:1) */
-  --pf-muted-dim:       #64748b;       /* slate-500 */
-  --pf-muted-darker:    #94a3b8;       /* slate-400 */
-  --pf-muted-darkest:   #cbd5e1;       /* slate-300 */
-
-  /* Indigo-tilted blue for richer accent — 4.95:1 on white (AA normal,
-   * AAA large). Hover row drops a step for tactile feedback. */
-  --pf-accent:          #4f46e5;       /* indigo-600 */
-  --pf-accent-hover:    #4338ca;       /* indigo-700 */
+  --pf-surface2:        #eef2f6;       
+  --pf-text:            #0b1220;       
+  --pf-text-dim:        #1f2937;       
+  --pf-muted:           #475569;       
+  --pf-muted-dim:       #64748b;       
+  --pf-muted-darker:    #94a3b8;       
+  --pf-muted-darkest:   #cbd5e1;       
+  --pf-accent:          #4f46e5;       
+  --pf-accent-hover:    #4338ca;       
   --pf-accent-text:     #4338ca;
   --pf-accent-subtle:   rgba(79,70,229,0.08);
   --pf-accent-soft:     rgba(79,70,229,0.14);
-
-  /* Warm CTA — amber pairs richer with indigo than with cobalt. */
-  --pf-cta-warm:        #f59e0b;       /* amber-500 */
-  --pf-cta-warm-hover:  #d97706;       /* amber-600 */
-
-  /* Borders carry a faint indigo cast so cards feel related to the
-   * accent instead of grey-on-grey. */
+  --pf-cta-warm:        #f59e0b;       
+  --pf-cta-warm-hover:  #d97706;       
   --pf-border:          rgba(79,70,229,0.16);
   --pf-border-dim:      rgba(79,70,229,0.08);
   --pf-border-subtle:   rgba(15,23,42,0.06);
@@ -387,22 +278,14 @@ body {
   --pf-border-medium:   rgba(79,70,229,0.20);
   --pf-border-hover:    rgba(79,70,229,0.45);
   --pf-border-faint:    rgba(15,23,42,0.03);
-
-  /* Elevations layered higher contrast so cards lift cleanly even on a
-   * near-white background. */
   --pf-elev-1: 0 1px 2px rgba(15,23,42,0.05), 0 1px 1px rgba(15,23,42,0.03);
   --pf-elev-2: 0 4px 12px rgba(15,23,42,0.07), 0 1px 3px rgba(15,23,42,0.04);
   --pf-elev-3: 0 12px 28px rgba(15,23,42,0.10), 0 4px 8px rgba(15,23,42,0.05);
   --pf-elev-4: 0 28px 56px rgba(15,23,42,0.16), 0 12px 24px rgba(15,23,42,0.08);
-
   --pf-sidebar:        #0b1220;
   --pf-sidebar-text:   #e2e8f0;
   --pf-sidebar-muted:  #94a3b8;
 }
-
-/* Clarity in dark mode — keep the blue + warm-amber accent identity but
- * invert surfaces. Used when both data-palette="clarity" AND data-theme="dark"
- * (or the .dark class set by ThemeContext) are active. */
 [data-palette="clarity"].dark,
 [data-palette="clarity"][data-theme="dark"] {
   --pf-bg:              #0b1220;
@@ -413,7 +296,7 @@ body {
   --pf-muted:           #94a3b8;
   --pf-border:          rgba(255,255,255,0.10);
   --pf-border-light:    rgba(255,255,255,0.08);
-  --pf-accent:          #3b82f6;       /* blue-500 — a touch lighter on dark */
+  --pf-accent:          #3b82f6;       
   --pf-accent-hover:    #60a5fa;
   --pf-sidebar:         #050912;
   --pf-sidebar-text:    #e2e8f0;
