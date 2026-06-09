@@ -25,7 +25,6 @@ from app.security import CurrentUser
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/sso", tags=["SSO"])
 
-
 class SSOConfigIn(BaseModel):
     idp_entity_id: str = Field(..., min_length=1, max_length=255)
     idp_sso_url: str = Field(..., min_length=1)
@@ -33,7 +32,6 @@ class SSOConfigIn(BaseModel):
     sp_entity_id: str = Field(..., min_length=1, max_length=255)
     email_domain: str = Field(..., min_length=3, max_length=120)
     enabled: bool = True
-
 
 class SSOConfigOut(BaseModel):
     id: uuid.UUID
@@ -43,7 +41,6 @@ class SSOConfigOut(BaseModel):
     sp_entity_id: str
     email_domain: str
     enabled: bool
-
 
 @router.get(
     "/configs/{org_id}",
@@ -65,7 +62,6 @@ async def get_config(org_id: uuid.UUID, db: DB, current_user: CurrentUser) -> SS
         email_domain=cfg.email_domain,
         enabled=cfg.enabled,
     )
-
 
 @router.put(
     "/configs/{org_id}",
@@ -102,7 +98,6 @@ async def put_config(
         enabled=cfg.enabled,
     )
 
-
 @router.get("/login")
 async def discover_idp(domain: str, db: DB) -> dict:
     """Public discovery — given an email domain, return the IdP SSO URL.
@@ -121,7 +116,6 @@ async def discover_idp(domain: str, db: DB) -> dict:
         "idp_sso_url": cfg.idp_sso_url,
         "sp_entity_id": cfg.sp_entity_id,
     }
-
 
 @router.post("/acs", status_code=status.HTTP_501_NOT_IMPLEMENTED)
 async def assertion_consumer_service(SAMLResponse: str = Form(...), RelayState: str | None = Form(default=None)) -> dict:
