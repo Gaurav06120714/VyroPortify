@@ -1,9 +1,3 @@
-/**
- * E2E tests for the resume upload flow.
- *
- * All API calls are intercepted via page.route() — no real backend.
- */
-
 import { test, expect } from "@playwright/test";
 import path from "path";
 import fs from "fs";
@@ -11,7 +5,7 @@ import os from "os";
 
 test.describe("Resume Upload", () => {
   test.beforeEach(async ({ page }) => {
-    // Mock the upload API
+    
     await page.route("**/api/v1/resume/upload", (route) => {
       route.fulfill({
         status: 201,
@@ -37,7 +31,6 @@ test.describe("Resume Upload", () => {
       });
     });
 
-    // Mock auth / /me endpoint
     await page.route("**/api/v1/auth/me", (route) => {
       route.fulfill({
         status: 200,
@@ -62,31 +55,28 @@ test.describe("Resume Upload", () => {
 
   test("upload zone is visible on the upload page", async ({ page }) => {
     await page.goto("/dashboard/upload");
-    // Look for drop zone text — using a broad selector
+    
     const dropZone = page.locator("[class*='dropzone'], [class*='upload'], input[type='file']").first();
-    // Just verify the page loaded without crashing
+    
     await expect(page.locator("body")).toBeVisible();
   });
 
   test("can attach a PDF file to the upload input", async ({ page }) => {
     await page.goto("/dashboard/upload");
 
-    // Create a temporary fake PDF file
     const tmpDir = os.tmpdir();
     const pdfPath = path.join(tmpDir, "test_resume.pdf");
-    // Write minimal PDF magic bytes
+    
     fs.writeFileSync(pdfPath, "%PDF-1.4 test resume content");
 
     const fileInput = page.locator('input[type="file"]').first();
 
     if (await fileInput.count() > 0) {
       await fileInput.setInputFiles(pdfPath);
-      // File name should appear somewhere in the UI
-      // (depends on component state — just verify no crash)
+      
       await expect(page.locator("body")).toBeVisible();
     }
 
-    // Cleanup
     fs.unlinkSync(pdfPath);
   });
 
@@ -97,7 +87,7 @@ test.describe("Resume Upload", () => {
     });
 
     await page.goto("/dashboard/upload");
-    // No critical JS errors should occur
+    
     const criticalErrors = errors.filter(
       (e) => e.includes("TypeError") || e.includes("Cannot read"),
     );
