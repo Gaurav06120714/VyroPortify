@@ -8,8 +8,6 @@ interface Props {
   params: Promise<{ slug: string }>;
 }
 
-// Social-card metadata. Next.js auto-wires the sibling opengraph-image.tsx
-// as the og image for this route, so we don't repeat the URL here.
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   let title = "Portfolio · VyroPortify";
@@ -26,7 +24,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       if (data.content?.title) description = data.content.title;
     }
   } catch {
-    /* defaults */
+    
   }
   const url = `${SITE_URL}/portfolio/p/${slug}`;
   return {
@@ -84,10 +82,6 @@ export default async function PublicPortfolioPage({ params }: Props) {
     notFound();
   }
 
-  // If the worker uploaded a hosted HTML build, frame it. Otherwise render
-  // the content JSON inline server-side — works in dev where no S3 is
-  // configured and as a graceful fallback in prod if the upload step ever
-  // fails.
   if (portfolio.html_url) {
     return (
       <iframe
