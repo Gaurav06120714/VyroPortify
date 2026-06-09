@@ -39,7 +39,7 @@ export default function StepShell({
       transition={{ duration: 0.22, ease: "easeOut" }}
       className="flex flex-col gap-8"
     >
-      {/* Progress bar */}
+      {}
       <div className="space-y-2">
         <div className="flex items-center justify-between text-xs text-[var(--pf-muted)]">
           <span>Step {step} of {total}</span>
@@ -55,7 +55,7 @@ export default function StepShell({
         </div>
       </div>
 
-      {/* Question */}
+      {}
       <div>
         {emoji && <div className="mb-3 text-3xl">{emoji}</div>}
         <h2 className="text-2xl font-bold leading-snug text-[var(--pf-text)] sm:text-3xl">
@@ -64,10 +64,10 @@ export default function StepShell({
         {hint && <p className="mt-2 text-[var(--pf-muted)]">{hint}</p>}
       </div>
 
-      {/* Input area */}
+      {}
       <div>{children}</div>
 
-      {/* Nav buttons */}
+      {}
       <div className="flex items-center gap-3 pt-2">
         {onBack && (
           <button
