@@ -14,7 +14,6 @@ from app.models.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 if TYPE_CHECKING:
     from app.models.user import User
 
-
 class WebhookEndpoint(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "webhook_endpoints"
 
@@ -35,7 +34,6 @@ class WebhookEndpoint(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
     def event_list(self) -> list[str]:
         return [e for e in (self.events or "").split(",") if e]
-
 
 class WebhookDelivery(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "webhook_deliveries"
