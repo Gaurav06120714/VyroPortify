@@ -22,7 +22,7 @@ interface PortfolioData {
 async function fetchPortfolio(slug: string): Promise<PortfolioData | null> {
   try {
     const res = await fetch(`${API_URL}/portfolio/p/${slug}`, {
-      next: { revalidate: 3600 }, // ISR — 1 hour, matches backend cache TTL
+      next: { revalidate: 3600 }, 
     });
     if (!res.ok) return null;
     return res.json();
