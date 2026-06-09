@@ -17,11 +17,11 @@ export default function SettingsPage() {
         <p className="mt-1 text-[var(--pf-muted)]">Manage your account and preferences.</p>
       </div>
 
-      {/* Profile section */}
+      {}
       <Section title="Profile">
         <div className="flex items-center gap-4">
           {user?.imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
+            
             <img
               src={user.imageUrl}
               alt="Avatar"
@@ -47,7 +47,7 @@ export default function SettingsPage() {
         </p>
       </Section>
 
-      {/* Plan section */}
+      {}
       <Section title="Plan &amp; Billing">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -69,7 +69,7 @@ export default function SettingsPage() {
         </div>
       </Section>
 
-      {/* Danger zone */}
+      {}
       <Section title="Danger Zone">
         <div className="space-y-3">
           <DangerAction
