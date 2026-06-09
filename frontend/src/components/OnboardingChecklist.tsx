@@ -20,10 +20,6 @@ const ITEMS: ChecklistItem[] = [
 
 const STORAGE_KEY = "pf.onboarding.completed";
 
-// Persistent first-run checklist. Stored client-side in localStorage so a
-// user who completes step 1 doesn't see it un-check after a refresh.
-// Server-driven completion can replace this later — for now the value is
-// the activation nudge, not the audit trail.
 export function OnboardingChecklist() {
   const [completed, setCompleted] = useState<Set<string>>(new Set());
   const [dismissed, setDismissed] = useState(false);
@@ -37,7 +33,7 @@ export function OnboardingChecklist() {
         setCompleted(new Set(JSON.parse(raw)));
       }
     } catch {
-      /* ignore */
+      
     }
   }, []);
 
@@ -49,7 +45,7 @@ export function OnboardingChecklist() {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify([...next]));
       } catch {
-        /* ignore */
+        
       }
       return next;
     });
@@ -60,25 +56,18 @@ export function OnboardingChecklist() {
     try {
       localStorage.setItem(STORAGE_KEY, "__dismissed__");
     } catch {
-      /* ignore */
+      
     }
   }
 
   const allDone = ITEMS.every((i) => completed.has(i.id));
 
-  // B6 fix: auto-dismiss must happen in an effect, not during render.
-  // React 18 strict mode double-invokes renders → double-writes to
-  // localStorage, and worse, the old code never called setDismissed()
-  // so the checklist kept showing with every item checked even after
-  // the storage flag was set. Now: when all items are complete, the
-  // effect fires once, writes the flag, and flips state — the UI
-  // disappears on the same tick.
   useEffect(() => {
     if (allDone && !dismissed) {
       try {
         localStorage.setItem(STORAGE_KEY, "__dismissed__");
       } catch {
-        /* ignore */
+        
       }
       setDismissed(true);
     }
