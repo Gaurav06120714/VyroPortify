@@ -5,26 +5,22 @@ const isPublicRoute = createRouteMatcher([
   "/",
   "/login(.*)",
   "/register(.*)",
-  "/signup(.*)",            // marketing alias for /register
+  "/signup(.*)",            
   "/portfolio/(.*)",
   "/pricing(.*)",
   "/templates(.*)",
   "/api/webhook(.*)",
-  // SEO / PWA assets — must be publicly fetchable
+  
   "/sitemap.xml",
   "/robots.txt",
   "/manifest.webmanifest",
   "/favicon.ico",
-  "/_next/(.*)",            // Next.js build assets
+  "/_next/(.*)",            
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
   if (isPublicRoute(req)) return;
 
-  // Bare `auth.protect()` returns 404 for unauthenticated visitors, which made
-  // /dashboard/* (incl. /dashboard/settings/billing) look broken instead of
-  // bouncing the user to login. Redirect explicitly to /login with a
-  // redirect_url so Clerk returns them to the originally requested page.
   const { userId } = await auth();
   if (!userId) {
     const url = req.nextUrl.clone();
