@@ -17,12 +17,10 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.db.base import Base
 from app.models.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 
-
 class ResumeExport(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "resume_exports"
     __table_args__ = (
-        # Quick lookup by (resume, content) — used by the cache check on
-        # repeated download attempts.
+        
         Index("ix_resume_exports_resume_hash", "resume_id", "content_hash"),
     )
 
@@ -36,16 +34,13 @@ class ResumeExport(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
     )
-    # SHA-256 of (template_id + serialized resume payload). Same input →
-    # same row → cache hit.
+    
     content_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     template_id: Mapped[str] = mapped_column(String(40), nullable=False)
-    # S3/R2 object key. The presigned URL is generated on demand so the
-    # row never holds a time-limited link.
+    
     s3_key: Mapped[str | None] = mapped_column(Text, nullable=True)
     file_size: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
-    # Which engine actually rendered this row — useful for telemetry +
-    # debugging "why does my PDF look different today?" reports.
+    
     engine: Mapped[str | None] = mapped_column(
         String(20), nullable=True,
         comment="tectonic | reportlab",
