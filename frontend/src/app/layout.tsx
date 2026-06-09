@@ -33,9 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <html lang="en" suppressHydrationWarning>
         <head>
-          {/* Pre-hydration palette resolver. Theme is locked to "light"
-              (light-mode-only build, Jun 2026), so only the palette axis
-              is resolved here. */}
+          {}
           <script dangerouslySetInnerHTML={{ __html: `try{document.documentElement.setAttribute('data-theme','light');document.documentElement.classList.remove('dark');var p=localStorage.getItem('portify-palette');document.documentElement.setAttribute('data-palette',(p==='clarity'||p==='aurora')?p:'aurora')}catch(e){document.documentElement.setAttribute('data-theme','light');document.documentElement.setAttribute('data-palette','aurora')}` }} />
         </head>
         <body
