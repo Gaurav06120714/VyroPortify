@@ -39,7 +39,7 @@ async function request<T>(
     try {
       const body = await res.json();
       const raw = body.detail ?? detail;
-      // Pydantic validation errors come back as an array of objects — flatten to string
+      
       if (Array.isArray(raw)) {
         detail = raw.map((e: { msg?: string; loc?: string[] }) =>
           [e.loc?.slice(1).join("."), e.msg].filter(Boolean).join(": ")
@@ -54,8 +54,6 @@ async function request<T>(
   if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
 }
-
-// ─── Resume ────────────────────────────────────────────────────────────────
 
 export async function uploadResume(
   file: File,
@@ -88,8 +86,6 @@ export async function getResume(id: string, token: string): Promise<Resume> {
 export async function deleteResume(id: string, token: string): Promise<void> {
   return request<void>(`/resume/${id}`, { method: "DELETE", token });
 }
-
-// ─── Portfolio ─────────────────────────────────────────────────────────────
 
 export async function generatePortfolio(
   resumeId: string,
@@ -135,8 +131,6 @@ export async function deletePortfolio(id: string, token: string): Promise<void> 
   return request<void>(`/portfolio/${id}`, { method: "DELETE", token });
 }
 
-// ─── Resume Builder ────────────────────────────────────────────────────────
-
 export async function buildResume(
   data: BuildResumeRequest,
   token: string,
@@ -181,8 +175,6 @@ export async function suggestSkills(
     token,
   });
 }
-
-// ─── Billing ───────────────────────────────────────────────────────────────
 
 export async function createCheckoutSession(
   token: string,
