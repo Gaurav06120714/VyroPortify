@@ -18,7 +18,6 @@ const SHORTCUTS: ShortcutEntry[] = [
   { keys: ["Esc"], description: "Close any open dialog" },
 ];
 
-// Renders a floating sheet listing all keyboard shortcuts. Opens on `?`.
 export function KeyboardShortcutsSheet() {
   const [open, setOpen] = useState(false);
 
