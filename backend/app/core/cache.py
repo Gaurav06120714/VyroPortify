@@ -29,7 +29,6 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-
 class RedisCache:
     def __init__(self) -> None:
         self._client: aioredis.Redis | None = None
@@ -79,11 +78,8 @@ class RedisCache:
             await self._client.aclose()
             self._client = None
 
-
-# Singleton
 cache = RedisCache()
 
-# ── TTL constants ──────────────────────────────────────────────────────────────
-PORTFOLIO_PAGE_TTL = 3600       # 1 hour — public portfolio pages
-TEMPLATE_LIST_TTL = 86400       # 24 hours — template catalogue
-PORTFOLIO_STATUS_TTL = 10       # 10 seconds — generation polling
+PORTFOLIO_PAGE_TTL = 3600       
+TEMPLATE_LIST_TTL = 86400       
+PORTFOLIO_STATUS_TTL = 10       
