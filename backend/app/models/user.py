@@ -12,23 +12,20 @@ if TYPE_CHECKING:
     from app.models.portfolio import Portfolio
     from app.models.resume import Resume
 
-
 class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Application user — auth handled by Clerk (clerk_user_id is the primary lookup key)."""
 
     __tablename__ = "users"
 
-    # Clerk user ID — e.g. "user_2abc..."  Used for JWT → User resolution.
     clerk_user_id: Mapped[str] = mapped_column(
         String(255), unique=True, nullable=False, index=True
     )
 
     email: Mapped[str] = mapped_column(String(320), unique=True, nullable=False, index=True)
-    # hashed_password kept as nullable so existing rows don't break; not used with Clerk.
+    
     hashed_password: Mapped[str | None] = mapped_column(Text, nullable=True)
     name: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    # v3.4.0 — E.164 phone number mirrored from Clerk (verified at signup).
-    # Unique when present so two accounts can't share a mobile.
+    
     phone_number: Mapped[str | None] = mapped_column(
         String(32), unique=True, nullable=True, index=True
     )
@@ -45,8 +42,7 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     stripe_subscription_id: Mapped[str | None] = mapped_column(
         String(255), unique=True, nullable=True, index=True
     )
-    # v2.1.1 — Stripe Connect Express account for template authors.
-    # NULL means the user hasn't onboarded as a seller yet.
+    
     stripe_account_id: Mapped[str | None] = mapped_column(
         String(255), unique=True, nullable=True, index=True
     )
@@ -54,7 +50,6 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         DateTime(timezone=True), nullable=True
     )
 
-    # Relationships
     resumes: Mapped[list["Resume"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
