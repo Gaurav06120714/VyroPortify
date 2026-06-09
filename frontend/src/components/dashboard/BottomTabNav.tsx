@@ -12,19 +12,11 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// v2.2.2 — Bottom tab nav for mobile. Mounted by the dashboard layout
-// under lg. Mirrors the desktop sidebar's top-level destinations so the
-// mental model carries over.
-//
-// Five slots is the iOS HIG cap that still leaves room for thumbs;
-// secondary destinations (Analytics, Upload, Templates, etc.) reach
-// from the dashboard pages themselves.
-
 interface Tab {
   href: string;
   label: string;
   icon: LucideIcon;
-  // matchPrefix means "this tab is active for any path that starts with href".
+  
   matchPrefix?: boolean;
 }
 
@@ -42,7 +34,7 @@ export function BottomTabNav() {
   return (
     <nav
       aria-label="Primary"
-      // env(safe-area-inset-bottom) keeps the bar above iPhone home indicators.
+      
       className="fixed inset-x-0 bottom-0 z-[var(--pf-z-sticky)] flex border-t border-[var(--pf-border-light)] bg-[var(--pf-surface)] lg:hidden"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
