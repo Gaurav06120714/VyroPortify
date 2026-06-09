@@ -13,26 +13,24 @@ if TYPE_CHECKING:
     from app.models.template import Template
     from app.models.user import User
 
-
 class Portfolio(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Generated portfolio site derived from a user's resume."""
 
     __tablename__ = "portfolios"
     __table_args__ = (
         Index("ix_portfolios_user_id", "user_id"),
-        # Unique slug index — also enforces uniqueness at DB level
+        
         Index("ix_portfolios_slug", "slug", unique=True),
-        # is_public index: used for public portfolio listing and sitemap queries
+        
         Index("ix_portfolios_is_public", "is_public"),
-        # status index: used for filtering by generation state
+        
         Index("ix_portfolios_status", "status"),
     )
 
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
-    # v2.0.0: nullable until the v2.0.5 backfill runs. core.authz still
-    # gates on user_id; org-scoped access is layered on top in v2.0.1.
+    
     organization_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("organizations.id", ondelete="SET NULL"),
@@ -60,7 +58,6 @@ class Portfolio(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         comment="draft | published | archived",
     )
 
-    # Relationships
     user: Mapped["User"] = relationship(back_populates="portfolios")
     resume: Mapped["Resume | None"] = relationship(back_populates="portfolios")
     template: Mapped["Template | None"] = relationship(back_populates="portfolios")
