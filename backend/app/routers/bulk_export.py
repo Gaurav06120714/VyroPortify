@@ -24,10 +24,9 @@ from app.security import CurrentUser
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/bulk", tags=["Bulk Export"])
 
-
 @router.get("/portfolios.zip")
 async def bulk_portfolios_zip(db: DB, current_user: CurrentUser) -> StreamingResponse:
-    # v3.3.1 — daily quota; ZIP serialisation is CPU-heavy.
+    
     from app.services.quota import consume as consume_quota
     await consume_quota(current_user, "bulk_export")
 
@@ -58,7 +57,7 @@ async def bulk_portfolios_zip(db: DB, current_user: CurrentUser) -> StreamingRes
                 "created_at": p.created_at.isoformat(),
             }
             manifest["portfolios"].append(entry)
-            # Write each portfolio's content snapshot
+            
             snapshot = {**entry, "content": p.content or {}}
             zf.writestr(f"portfolios/{p.slug}.json", json.dumps(snapshot, indent=2, default=str))
 
