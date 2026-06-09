@@ -17,7 +17,6 @@ from pydantic import BaseModel
 
 T = TypeVar("T")
 
-
 class APIResponse(BaseModel, Generic[T]):
     """Standard single-item API response envelope."""
 
@@ -26,7 +25,6 @@ class APIResponse(BaseModel, Generic[T]):
     error: Optional[str] = None
     error_code: Optional[str] = None
     correlation_id: Optional[str] = None
-
 
 class PaginatedResponse(BaseModel, Generic[T]):
     """Standard paginated list response."""
