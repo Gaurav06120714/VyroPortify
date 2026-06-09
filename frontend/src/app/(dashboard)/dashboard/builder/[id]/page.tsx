@@ -15,12 +15,6 @@ import { cn } from "@/lib/utils";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8001/api/v1";
 
-// v1.7.3 — Unified Builder shell
-// Splits the page into Edit (left) and Live Preview (right). The edit form
-// moves in v1.7.4 (live-preview wiring); for v1.7.3 the left pane offers a
-// CTA into the existing /dashboard/build-resume flow so the route exists,
-// redirects work, and the visual layout lands without a deep form refactor.
-
 type Tab = "edit" | "preview";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3007";
@@ -31,8 +25,6 @@ export default function BuilderPage() {
   const router = useRouter();
   const portfolioId = params.id;
 
-  // URL-driven tab state so deep links survive refresh + mobile preserves
-  // tab on reload. Default to edit; switch to preview on ?tab=preview.
   const tabFromUrl = (search.get("tab") as Tab) === "preview" ? "preview" : "edit";
   const [tab, setTab] = useState<Tab>(tabFromUrl);
 
@@ -47,10 +39,6 @@ export default function BuilderPage() {
     router.replace(`?${sp.toString()}`, { scroll: false });
   }
 
-  // B5 fix: the public viewer is keyed by SLUG, not UUID
-  // (GET /portfolio/p/{slug}). The old code passed the portfolio
-  // UUID into that URL → guaranteed 404. We now fetch the status
-  // endpoint, read the slug, and build the iframe URL from that.
   const { getToken } = useAuth();
   const [previewSlug, setPreviewSlug] = useState<string | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
@@ -91,7 +79,7 @@ export default function BuilderPage() {
 
   return (
     <div className="flex h-[calc(100dvh-3.5rem)] flex-col">
-      {/* Header strip */}
+      {}
       <header className="flex items-center justify-between border-b border-[var(--pf-border-light)] bg-[var(--pf-bg)] px-4 py-3 lg:px-6">
         <div className="flex items-center gap-3">
           <h1 className="text-h3 text-[var(--pf-text)]">Portfolio Builder</h1>
@@ -101,7 +89,7 @@ export default function BuilderPage() {
           </span>
         </div>
 
-        {/* Desktop: tab buttons unused (both panes visible). Mobile: tabs. */}
+        {}
         <div className="flex items-center gap-2 lg:hidden" role="tablist" aria-label="Builder view">
           <TabButton active={tab === "edit"} onClick={() => setTabAndUrl("edit")}>
             <PenLine className="h-4 w-4" /> Edit
@@ -123,10 +111,9 @@ export default function BuilderPage() {
         )}
       </header>
 
-      {/* Split-pane body. lg+ shows both panes side by side; below lg it's
-          the single active tab from the header above. */}
+      {}
       <div className="flex flex-1 overflow-hidden">
-        {/* ── Edit pane ──────────────────────────────────────────────── */}
+        {}
         <section
           role="tabpanel"
           aria-label="Edit"
@@ -183,7 +170,7 @@ export default function BuilderPage() {
           </div>
         </section>
 
-        {/* ── Preview pane ───────────────────────────────────────────── */}
+        {}
         <section
           role="tabpanel"
           aria-label="Preview"
@@ -198,10 +185,7 @@ export default function BuilderPage() {
               src={previewUrl}
               title="Portfolio preview"
               className="h-full w-full border-0"
-              // Mirror the public viewer sandbox so the preview behaves
-              // identically to what real visitors will see. v1.7.5 adds
-              // pinch-zoom on touch devices so a small phone screen can
-              // still see the whole portfolio.
+              
               sandbox="allow-scripts allow-same-origin"
               style={{ touchAction: "pinch-zoom" }}
             />
@@ -211,9 +195,7 @@ export default function BuilderPage() {
         </section>
       </div>
 
-      {/* v1.7.5 — Sticky bottom CTA on mobile only. Mirrors the rest of the
-          dashboard's mobile pattern so the primary action is always one
-          thumb-tap away, regardless of how far the user has scrolled. */}
+      {}
       <div className="border-t border-[var(--pf-border-light)] bg-[var(--pf-bg)] p-3 lg:hidden">
         {tab === "edit" ? (
           <button
