@@ -26,14 +26,12 @@ from app.security import CurrentUser
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/compliance", tags=["Compliance"])
 
-
 class AuditEntry(BaseModel):
     id: uuid.UUID
     action: str
     target_type: str | None
     target_id: str | None
     created_at: datetime
-
 
 class PoliciesResponse(BaseModel):
     retention_days_inactive_account: int = 365
@@ -50,12 +48,10 @@ class PoliciesResponse(BaseModel):
         "AWS S3 (object storage)",
     ]
 
-
 @router.get("/policies", response_model=PoliciesResponse)
 async def get_policies() -> PoliciesResponse:
     """Public — disclosed retention, residency, and subprocessor list."""
     return PoliciesResponse()
-
 
 @router.get("/me/export")
 async def export_my_data(db: DB, current_user: CurrentUser) -> dict:
@@ -120,7 +116,6 @@ async def export_my_data(db: DB, current_user: CurrentUser) -> dict:
         ],
     }
 
-
 @router.delete("/me", status_code=status.HTTP_202_ACCEPTED)
 async def delete_my_account(db: DB, current_user: CurrentUser) -> dict:
     """SOC 2 / GDPR Art. 17 — schedule deletion of account + cascaded data.
@@ -137,7 +132,6 @@ async def delete_my_account(db: DB, current_user: CurrentUser) -> dict:
     await db.delete(current_user)
     await db.commit()
     return {"deleted_user_id": str(user_id), "deleted_at": datetime.now(timezone.utc).isoformat()}
-
 
 @router.get("/me/audit", response_model=list[AuditEntry])
 async def my_audit_events(db: DB, current_user: CurrentUser) -> list[AuditEntry]:
