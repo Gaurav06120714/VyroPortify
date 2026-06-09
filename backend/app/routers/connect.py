@@ -12,7 +12,6 @@ checkout is initiated (separate sub-version because that flow
 intersects with portfolio generation, not just the marketplace).
 """
 
-
 import logging
 
 import stripe
@@ -27,11 +26,9 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/connect", tags=["Connect"])
 
-
 class OnboardResponse(BaseModel):
     onboarding_url: str
     account_id: str
-
 
 @router.post(
     "/onboard",
@@ -44,13 +41,9 @@ async def onboard(current_user: CurrentUser, db: DB) -> OnboardResponse:
 
     stripe.api_key = settings.STRIPE_SECRET_KEY
 
-    # B25: column is guaranteed by alembic 0011 — direct attribute access.
     account_id = current_user.stripe_account_id
     if not account_id:
-        # Express account: hosted onboarding, light KYC, fastest path
-        # for individual authors. Country defaulted to US — extend via
-        # a request body parameter when we expand the marketplace
-        # internationally.
+        
         account = stripe.Account.create(
             type="express",
             email=current_user.email,
@@ -69,7 +62,6 @@ async def onboard(current_user: CurrentUser, db: DB) -> OnboardResponse:
     )
     return OnboardResponse(onboarding_url=link.url, account_id=account_id)
 
-
 @router.get(
     "/status",
     summary="Return Stripe Connect onboarding state for the caller",
@@ -77,7 +69,7 @@ async def onboard(current_user: CurrentUser, db: DB) -> OnboardResponse:
 async def connect_status(current_user: CurrentUser) -> dict:
     if not settings.STRIPE_SECRET_KEY:
         return {"configured": False}
-    # B25: column is guaranteed by alembic 0011 — direct attribute access.
+    
     account_id = current_user.stripe_account_id
     if not account_id:
         return {"configured": False, "account_id": None}
