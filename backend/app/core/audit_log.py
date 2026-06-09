@@ -38,18 +38,13 @@ import logging
 import time
 from typing import Any
 
-# Dedicated logger — route this to a SIEM or separate log file in production.
-# Example loguru/logging config: route "vyroportify.security" to security.log.
 _security_logger = logging.getLogger("vyroportify.security")
 
-# Ensure the security logger always has at least one handler so events are
-# not silently dropped if the root logger has no handlers configured.
 if not _security_logger.handlers and not _security_logger.parent.handlers:
     _h = logging.StreamHandler()
     _h.setFormatter(logging.Formatter("%(message)s"))
     _security_logger.addHandler(_h)
     _security_logger.setLevel(logging.INFO)
-
 
 def log_security_event(
     event_type: str,
@@ -75,22 +70,18 @@ def log_security_event(
         event: dict[str, Any] = {
             "ts": time.time(),
             "event": event_type,
-            "user_id": user_id,  # UUID string or None — never email
+            "user_id": user_id,  
             **_scrub_pii(detail),
         }
         _security_logger.info(json.dumps(event))
-    except Exception:  # noqa: BLE001
-        # Last-resort: if even JSON serialization fails, emit a plain warning.
+    except Exception:  
+        
         _security_logger.warning(
             "audit_log failed to serialize event_type=%s user_id=%s",
             event_type,
             user_id,
         )
 
-
-# ── PII scrubber ───────────────────────────────────────────────────────────────
-
-# Field names that should NEVER appear in logs, regardless of what callers pass.
 _PII_KEYS = frozenset({
     "email",
     "password",
@@ -107,7 +98,6 @@ _PII_KEYS = frozenset({
     "ssn",
     "phone",
 })
-
 
 def _scrub_pii(d: dict[str, Any]) -> dict[str, Any]:
     """Recursively remove PII keys from a dict before logging.
