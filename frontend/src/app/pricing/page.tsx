@@ -75,7 +75,6 @@ export default function PricingPage() {
     }
   };
 
-  // Colors based on theme
   const bg = isLight ? "#ffffff" : "var(--pf-bg)";
   const cardBg = isLight ? "#f8f8fa" : "var(--pf-surface)";
   const border = isLight ? "rgba(0,0,0,0.08)" : "var(--pf-accent-soft)";
@@ -85,7 +84,7 @@ export default function PricingPage() {
 
   return (
     <div className="min-h-dvh transition-colors duration-300" style={{ background: bg, color: heading }}>
-      {/* Nav */}
+      {}
       <nav
         className="sticky top-0 z-50 border-b backdrop-blur-md transition-colors duration-300"
         style={{
@@ -128,7 +127,7 @@ export default function PricingPage() {
       </nav>
 
       <div className="mx-auto max-w-5xl px-4 py-20 space-y-20">
-        {/* Header */}
+        {}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -146,9 +145,9 @@ export default function PricingPage() {
           </p>
         </motion.div>
 
-        {/* Plan cards */}
+        {}
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:items-start">
-          {/* Free card */}
+          {}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -196,7 +195,7 @@ export default function PricingPage() {
             )}
           </motion.div>
 
-          {/* Pro card */}
+          {}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -208,14 +207,14 @@ export default function PricingPage() {
               boxShadow: "0 0 40px var(--pf-accent-subtle)",
             }}
           >
-            {/* Popular badge */}
+            {}
             <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
               <span className="rounded-full bg-[var(--pf-accent)] px-4 py-1 text-xs font-bold text-white shadow-md">
                 MOST POPULAR
               </span>
             </div>
 
-            {/* Top glow bar */}
+            {}
             <div className="absolute left-0 right-0 top-0 h-[2px] bg-gradient-to-r from-[var(--pf-accent)] to-[#00d4ff]" />
 
             <div className="mb-6 pt-2">
@@ -267,7 +266,7 @@ export default function PricingPage() {
           </motion.div>
         </div>
 
-        {/* FAQ */}
+        {}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -291,7 +290,7 @@ export default function PricingPage() {
           </div>
         </motion.div>
 
-        {/* Bottom CTA */}
+        {}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
