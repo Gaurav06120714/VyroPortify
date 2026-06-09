@@ -1,23 +1,13 @@
-/**
- * Tests for the TagInput component.
- *
- * Tests: rendering, adding tags via Enter/comma, removing tags, deduplication,
- * max tag enforcement, backspace removal.
- */
-
 import React, { useState } from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-// Mock lucide-react
 vi.mock("lucide-react", () => ({
   X: () => <span data-testid="icon-x" aria-label="remove">×</span>,
 }));
 
 import TagInput from "@/components/builder/TagInput";
-
-// ── Test wrapper with state management ────────────────────────────────────────
 
 function TagInputWrapper({
   initialTags = [] as string[],
@@ -96,7 +86,7 @@ describe("TagInput", () => {
     render(<TagInputWrapper initialTags={["Python", "Go"]} onChange={onChange} />);
 
     const removeButtons = screen.getAllByTestId("icon-x");
-    // Click the first remove button (removes "Python")
+    
     await userEvent.click(removeButtons[0]);
 
     expect(onChange).toHaveBeenCalledWith(["Go"]);
@@ -110,7 +100,6 @@ describe("TagInput", () => {
     await userEvent.type(input, "python");
     await userEvent.keyboard("{Enter}");
 
-    // onChange should either not be called, or called with same tags
     if (onChange.mock.calls.length > 0) {
       const lastCall = onChange.mock.calls[onChange.mock.calls.length - 1];
       const tagLower = lastCall[0].map((t: string) => t.toLowerCase());
@@ -134,7 +123,6 @@ describe("TagInput", () => {
     await userEvent.type(input, "D");
     await userEvent.keyboard("{Enter}");
 
-    // onChange should NOT have been called (limit reached)
     expect(onChange).not.toHaveBeenCalled();
   });
 
@@ -154,17 +142,16 @@ describe("TagInput", () => {
     render(<TagInputWrapper onChange={onChange} />);
 
     const input = screen.getByRole("textbox");
-    // Simulate pasting with comma separation via blur
+    
     await userEvent.type(input, "Redis, MongoDB");
-    await userEvent.tab(); // triggers onBlur
+    await userEvent.tab(); 
 
-    // At minimum one tag should have been added
     expect(onChange).toHaveBeenCalled();
   });
 
   it("shows 'Add more...' placeholder when tags exist", () => {
     render(<TagInputWrapper initialTags={["Python"]} />);
-    // With tags present, placeholder changes to "Add more…"
+    
     const input = screen.getByRole("textbox") as HTMLInputElement;
     expect(input.placeholder).toBe("Add more…");
   });
