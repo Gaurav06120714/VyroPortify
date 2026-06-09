@@ -51,7 +51,7 @@ export default function MobileHeader() {
         </div>
       </header>
 
-      {/* Drawer */}
+      {}
       {open && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div
