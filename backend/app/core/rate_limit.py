@@ -48,15 +48,12 @@ from fastapi import Depends, HTTPException, Request, status
 
 logger = logging.getLogger(__name__)
 
-# ── Re-use config from limiter.py ─────────────────────────────────────────────
 from app.core.limiter import (
     IP_HASH_SALT,
     _extract_client_ip,
     _hash_for_log,
     log_security_event,
 )
-
-# ── Redis client ──────────────────────────────────────────────────────────────
 
 def _get_redis():
     """Lazy-import redis.asyncio to avoid startup failure if Redis is missing."""
@@ -72,7 +69,6 @@ def _get_redis():
     except ImportError:
         return None
 
-# Module-level lazy singleton
 _redis_client = None
 
 def _redis():
@@ -80,11 +76,6 @@ def _redis():
     if _redis_client is None:
         _redis_client = _get_redis()
     return _redis_client
-
-
-# ── Sliding window Lua script ─────────────────────────────────────────────────
-# Atomically: remove expired entries, count remaining, add new if under limit.
-# Returns count+1 on success, -1 if over limit.
 
 _SLIDING_WINDOW_LUA = """
 local key     = KEYS[1]
@@ -104,7 +95,6 @@ return -1
 """
 
 import secrets
-
 
 async def _sliding_window_check(
     key: str,
@@ -137,7 +127,7 @@ async def _sliding_window_check(
             member,
         )
         if result == -1:
-            # Over limit — estimate retry-after from oldest entry
+            
             oldest = await r.zrange(redis_key, 0, 0, withscores=True)
             if oldest:
                 oldest_ms = oldest[0][1]
@@ -150,8 +140,6 @@ async def _sliding_window_check(
         logger.warning("[rate_limit] Redis error, failing open: %s", exc)
         return True, 0
 
-
-# ── Progressive lockout helpers ───────────────────────────────────────────────
 """
 Lockout tiers (based on cumulative failure count stored in Redis):
   5  failures → 15 min ban
@@ -172,7 +160,6 @@ async def _get_lockout_ttl(lock_key: str) -> int:
     except Exception:
         return 0
 
-
 async def _record_failure(lock_key: str) -> None:
     """Increment failure counter and apply lockout if threshold is reached."""
     r = _redis()
@@ -181,22 +168,21 @@ async def _record_failure(lock_key: str) -> None:
     fail_key = f"rl:fails:{lock_key}"
     try:
         fails = await r.incr(fail_key)
-        await r.expire(fail_key, 86_400)  # counter TTL: 24 h
+        await r.expire(fail_key, 86_400)  
 
         lock_ttl = 0
         if fails >= 20:
-            lock_ttl = 86_400   # 24 h
+            lock_ttl = 86_400   
         elif fails >= 10:
-            lock_ttl = 3_600    # 1 h
+            lock_ttl = 3_600    
         elif fails >= 5:
-            lock_ttl = 900      # 15 min
+            lock_ttl = 900      
 
         if lock_ttl:
-            # NX: only set if not already locked, to avoid resetting a longer ban
+            
             await r.set(f"rl:lock:{lock_key}", "1", ex=lock_ttl, nx=True)
     except Exception as exc:
         logger.warning("[rate_limit] Could not record failure for %s: %s", lock_key, exc)
-
 
 async def _clear_failures(lock_key: str) -> None:
     """Clear failure counters on successful authentication."""
@@ -208,16 +194,11 @@ async def _clear_failures(lock_key: str) -> None:
     except Exception:
         pass
 
-
 def _ip_lock_key(ip: str) -> str:
     return f"ip:{_hash_for_log(ip)}"
 
-
 def _email_lock_key(email: str) -> str:
     return f"email:{_hash_for_log(email.lower())}"
-
-
-# ── Public helper functions ────────────────────────────────────────────────────
 
 async def record_login_failure(request: Request, email: Optional[str] = None) -> None:
     """
@@ -237,7 +218,6 @@ async def record_login_failure(request: Request, email: Optional[str] = None) ->
     else:
         log_security_event(request, "login_failure")
 
-
 async def record_login_success(request: Request, email: str) -> None:
     """
     Call from a login route handler when credentials are VALID.
@@ -248,9 +228,6 @@ async def record_login_success(request: Request, email: str) -> None:
     ip = _extract_client_ip(request)
     await _clear_failures(_ip_lock_key(ip))
     await _clear_failures(_email_lock_key(email))
-
-
-# ── FastAPI dependency ─────────────────────────────────────────────────────────
 
 class RateLimitCheck:
     """
@@ -299,7 +276,6 @@ class RateLimitCheck:
         ip = _extract_client_ip(request)
         ip_key = _ip_lock_key(ip)
 
-        # ── 1. IP lockout check ────────────────────────────────────────────
         ip_lock_ttl = await _get_lockout_ttl(ip_key)
         if ip_lock_ttl > 0:
             log_security_event(request, "ip_locked_out", {"prefix": self.prefix})
@@ -312,7 +288,6 @@ class RateLimitCheck:
                 headers={"Retry-After": str(ip_lock_ttl)},
             )
 
-        # ── 2. IP sliding window ───────────────────────────────────────────
         allowed, retry_sec = await _sliding_window_check(
             f"{self.prefix}:ip:{_hash_for_log(ip)}",
             self.max_per_ip,
@@ -330,7 +305,6 @@ class RateLimitCheck:
                 headers={"Retry-After": str(retry_sec)},
             )
 
-        # ── 3. Email lockout (login endpoints only) ────────────────────────
         if self.check_email_lockout:
             email: str = getattr(request.state, "login_email", "") or ""
             if email:
@@ -347,7 +321,6 @@ class RateLimitCheck:
                         headers={"Retry-After": str(email_lock_ttl)},
                     )
 
-                # Per-email sliding window: 3 / window
                 allowed_email, retry_sec_email = await _sliding_window_check(
                     f"{self.prefix}:email:{_hash_for_log(email.lower())}",
                     3,
