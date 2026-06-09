@@ -21,9 +21,6 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
-
-# ── GET /me ────────────────────────────────────────────────────────────────────
-
 @router.get(
     "/me",
     response_model=UserResponse,
