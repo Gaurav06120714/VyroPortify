@@ -1,9 +1,3 @@
-/**
- * E2E tests for portfolio viewing, publishing, and public URL access.
- *
- * All API calls mocked via page.route().
- */
-
 import { test, expect } from "@playwright/test";
 
 const MOCK_PORTFOLIO = {
@@ -28,7 +22,7 @@ const MOCK_PORTFOLIO = {
 
 test.describe("Portfolio", () => {
   test.beforeEach(async ({ page }) => {
-    // Mock portfolio list
+    
     await page.route("**/api/v1/portfolio/", (route) => {
       route.fulfill({
         status: 200,
@@ -39,7 +33,6 @@ test.describe("Portfolio", () => {
       });
     });
 
-    // Mock public portfolio by slug
     await page.route("**/api/v1/portfolio/p/test-user-12345678", (route) => {
       route.fulfill({
         status: 200,
@@ -47,7 +40,6 @@ test.describe("Portfolio", () => {
       });
     });
 
-    // Mock portfolio status
     await page.route("**/api/v1/portfolio/*/status", (route) => {
       route.fulfill({
         status: 200,
@@ -61,7 +53,6 @@ test.describe("Portfolio", () => {
       });
     });
 
-    // Mock publish toggle
     await page.route("**/api/v1/portfolio/*/publish", (route) => {
       route.fulfill({
         status: 200,
@@ -69,7 +60,6 @@ test.describe("Portfolio", () => {
       });
     });
 
-    // Mock auth
     await page.route("**/api/v1/auth/me", (route) => {
       route.fulfill({
         status: 200,
@@ -110,7 +100,7 @@ test.describe("Portfolio", () => {
   });
 
   test("404 for unknown public portfolio slug", async ({ page }) => {
-    // Override the mock to return 404 for unknown slug
+    
     await page.route("**/api/v1/portfolio/p/nonexistent-slug", (route) => {
       route.fulfill({
         status: 404,
@@ -119,10 +109,10 @@ test.describe("Portfolio", () => {
     });
 
     const response = await page.goto("/portfolio/p/nonexistent-slug");
-    // Either Next.js shows a 404 page, or the response code is 404
+    
     const isNotFound =
       response?.status() === 404 || page.url().includes("404") || page.url().includes("not-found");
-    // Accept either a proper 404 or that the page renders without crashing
+    
     expect(response?.ok() || isNotFound || true).toBe(true);
   });
 
