@@ -70,7 +70,7 @@ export default function GeneratingPage({ params }: Props) {
 
   return (
     <div className="flex min-h-full flex-col items-center justify-center px-4 py-16">
-      {/* Background pulse */}
+      {}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <motion.div
           className="absolute left-1/2 top-1/2 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--pf-accent)]"
@@ -80,7 +80,7 @@ export default function GeneratingPage({ params }: Props) {
       </div>
 
       <div className="relative w-full max-w-md space-y-10 text-center">
-        {/* Animated icon */}
+        {}
         <AnimatePresence mode="wait">
           <motion.div
             key={phase}
@@ -112,7 +112,7 @@ export default function GeneratingPage({ params }: Props) {
           </motion.div>
         </AnimatePresence>
 
-        {/* Heading */}
+        {}
         <AnimatePresence mode="wait">
           <motion.div
             key={phase}
@@ -150,7 +150,7 @@ export default function GeneratingPage({ params }: Props) {
           </motion.div>
         </AnimatePresence>
 
-        {/* Step indicators */}
+        {}
         {!error && (
           <div className="space-y-3">
             {STEPS.map((step, idx) => {
@@ -170,7 +170,7 @@ export default function GeneratingPage({ params }: Props) {
                         : "border-[var(--pf-border-dim)] bg-[var(--pf-surface)] opacity-40"
                   }`}
                 >
-                  {/* Icon */}
+                  {}
                   <div
                     className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${
                       isActive
@@ -217,7 +217,7 @@ export default function GeneratingPage({ params }: Props) {
                     )}
                   </div>
 
-                  {/* Active spinner */}
+                  {}
                   {isActive && (
                     <motion.div
                       animate={{ rotate: 360 }}
@@ -231,7 +231,7 @@ export default function GeneratingPage({ params }: Props) {
           </div>
         )}
 
-        {/* Progress bar */}
+        {}
         {!error && phase !== "done" && (
           <div className="h-1 w-full overflow-hidden rounded-full bg-[var(--pf-border-dim)]">
             <motion.div
