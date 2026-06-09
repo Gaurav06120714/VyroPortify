@@ -87,7 +87,7 @@ export default function PricingSection() {
             Start free. Upgrade if you need a custom domain or analytics. No hidden fees.
           </p>
 
-          {/* Toggle */}
+          {}
           <div className="mt-8 inline-flex items-center gap-3 rounded-full border border-border bg-card p-1">
             <button
               onClick={() => setYearly(false)}
