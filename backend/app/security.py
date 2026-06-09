@@ -39,16 +39,11 @@ _CREDENTIALS_EXCEPTION = HTTPException(
     headers={"WWW-Authenticate": "Bearer"},
 )
 
-# ── JWKS cache ─────────────────────────────────────────────────────────────────
-# Clerk's JWKS is stable (rotates rarely). We cache it for 1 hour so we don't
-# make an outbound HTTP call on every authenticated request, while still picking
-# up key rotations within a reasonable window.
-
 _JWKS_CACHE: dict[str, Any] = {}
 _JWKS_FETCHED_AT: float = 0.0
-_JWKS_TTL = 3600  # seconds
+_JWKS_TTL = 3600  
 
-CLERK_JWKS_URL = settings.CLERK_JWKS_URL  # set via CLERK_JWKS_URL env var
+CLERK_JWKS_URL = settings.CLERK_JWKS_URL  
 
 if not CLERK_JWKS_URL:
     import logging as _logging
@@ -56,7 +51,6 @@ if not CLERK_JWKS_URL:
         "CLERK_JWKS_URL is not set — all authenticated requests will fail. "
         "Set CLERK_JWKS_URL in your .env file."
     )
-
 
 async def _get_jwks() -> dict[str, Any]:
     """Fetch/refresh Clerk's JSON Web Key Set (cached for 1hr)."""
@@ -82,7 +76,6 @@ async def _get_jwks() -> dict[str, Any]:
             )
     return _JWKS_CACHE
 
-
 async def verify_clerk_token(token: str) -> dict[str, Any]:
     """Verify a Clerk-issued JWT and return its payload.
 
@@ -91,16 +84,16 @@ async def verify_clerk_token(token: str) -> dict[str, Any]:
     jwks = await _get_jwks()
 
     try:
-        # jose automatically selects the key matching the 'kid' header
+        
         payload = jwt.decode(
             token,
             jwks,
             algorithms=["RS256"],
-            options={"verify_aud": False},  # Clerk doesn't set 'aud' by default
+            options={"verify_aud": False},  
         )
     except JWTError as exc:
         logger.debug("Clerk JWT verification failed: %s", exc)
-        # Log auth failures for security monitoring — no PII in the log
+        
         from app.core.audit_log import log_security_event
         log_security_event(
             "auth_failure",
@@ -109,14 +102,10 @@ async def verify_clerk_token(token: str) -> dict[str, Any]:
         )
         raise _CREDENTIALS_EXCEPTION
 
-    # Clerk puts the user ID in 'sub'
     if not payload.get("sub"):
         raise _CREDENTIALS_EXCEPTION
 
     return payload
-
-
-# ── FastAPI dependency: current authenticated user ─────────────────────────────
 
 async def get_current_user(
     credentials: Annotated[HTTPAuthorizationCredentials, Depends(_BEARER)],
@@ -126,19 +115,16 @@ async def get_current_user(
 
     Raises HTTP 401 for invalid/expired tokens.
     """
-    from app.models.user import User  # noqa: PLC0415
+    from app.models.user import User  
 
     payload = await verify_clerk_token(credentials.credentials)
     clerk_id: str = payload["sub"]
 
-    # Look up by clerk_user_id
     result = await db.execute(select(User).where(User.clerk_user_id == clerk_id))
     user = result.scalar_one_or_none()
 
     if user is None:
-        # Auto-create the user on first API call after sign-up.
-        # We deliberately do NOT log the email address here to avoid PII in logs
-        # (audit_log.py handles structured security events separately).
+        
         email = (
             payload.get("email")
             or (payload.get("email_addresses") or [{}])[0].get("email_address", "")
@@ -157,17 +143,10 @@ async def get_current_user(
         )
         db.add(user)
         await db.flush()
-        logger.info("Auto-created user clerk_id=%s", clerk_id)  # no email in logs — PII
+        logger.info("Auto-created user clerk_id=%s", clerk_id)  
 
-        # v2.0.5: every new user gets a personal organization on first sight.
-        # Same shape as the backfill migration so the data model invariant
-        # ("every user has at least one membership") holds for both legacy
-        # and new accounts.
         from app.models.organization import Membership, Organization
 
-        # B27: typographic apostrophe (’ U+2019) for the workspace name.
-        # Matches the UI convention and avoids the awkward "Workspace's
-        # Workspace" doubling when name is falsy.
         owner_label = name or (email.split("@")[0] if email else None)
         org_name = f"{owner_label}’s Workspace" if owner_label else "Personal Workspace"
         org = Organization(
@@ -185,7 +164,4 @@ async def get_current_user(
 
     return user
 
-
-# Annotated shorthand for route signatures:
-#   async def protected(current_user: CurrentUser) -> ...:
 CurrentUser = Annotated[Any, Depends(get_current_user)]
