@@ -20,7 +20,6 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/public", tags=["Public API"])
 
-
 class PortfolioOut(BaseModel):
     id: uuid.UUID
     slug: str
@@ -31,13 +30,11 @@ class PortfolioOut(BaseModel):
     html_url: str | None
     custom_domain: str | None
 
-
 class ResumeOut(BaseModel):
     id: uuid.UUID
     status: str
     original_filename: str | None
     file_type: str | None
-
 
 @router.get("/me")
 async def whoami(auth: APIKeyAuth = Depends(require_scope("portfolios:read"))) -> dict:
@@ -48,7 +45,6 @@ async def whoami(auth: APIKeyAuth = Depends(require_scope("portfolios:read"))) -
         "scopes": auth.scopes,
         "key_prefix": auth.key.prefix,
     }
-
 
 @router.get("/portfolios", response_model=list[PortfolioOut])
 async def list_portfolios(
@@ -66,7 +62,6 @@ async def list_portfolios(
     )
     return [_portfolio_out(p) for p in result.scalars().all()]
 
-
 @router.get("/portfolios/{portfolio_id}", response_model=PortfolioOut)
 async def get_portfolio(
     portfolio_id: uuid.UUID,
@@ -82,7 +77,6 @@ async def get_portfolio(
     if p is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Portfolio not found")
     return _portfolio_out(p)
-
 
 @router.get("/resumes", response_model=list[ResumeOut])
 async def list_resumes(
@@ -107,7 +101,6 @@ async def list_resumes(
         )
         for r in result.scalars().all()
     ]
-
 
 def _portfolio_out(p: Portfolio) -> PortfolioOut:
     return PortfolioOut(
