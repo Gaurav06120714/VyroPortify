@@ -20,13 +20,11 @@ from app.workers.celery_app import celery_app
 
 logger = logging.getLogger(__name__)
 
-
 def _sync_engine():
     url = settings.DATABASE_URL.replace("+asyncpg", "+psycopg2").replace(
         "+psycopg", "+psycopg2"
     )
     return create_engine(url, future=True)
-
 
 @celery_app.task(
     name="webhooks.deliver",
@@ -38,9 +36,7 @@ def _sync_engine():
     acks_late=True,
 )
 def deliver_webhook_task(*, endpoint_id: str, event: str, data: dict[str, Any]) -> dict:
-    # v3.3.1 — receiver throttle. Cap each endpoint at 60 deliveries / minute so
-    # a flood of events (or a misconfigured loop) can't be amplified by us into
-    # a DoS against the receiver — or against ourselves if the receiver is slow.
+    
     try:
         import redis as _sync_redis
         rc = _sync_redis.Redis.from_url(settings.REDIS_URL, decode_responses=True)
@@ -91,7 +87,7 @@ def deliver_webhook_task(*, endpoint_id: str, event: str, data: dict[str, Any]) 
             db.commit()
 
             if 500 <= resp.status_code < 600:
-                # Trigger retry — raised inside the autoretry_for tuple via httpx
+                
                 raise httpx.HTTPStatusError(
                     f"{resp.status_code}", request=resp.request, response=resp
                 )
