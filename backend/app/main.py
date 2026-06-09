@@ -46,57 +46,36 @@ from app.routers import (
     webhooks,
 )
 
-# Initialise Sentry before anything else (no-op if SENTRY_DSN is unset)
 init_sentry()
 
-# Configure structured logging before the first log line
 from app.core.logging_config import configure_logging
 configure_logging()
 
 logger = logging.getLogger(__name__)
 
-# ── App factory ────────────────────────────────────────────────────────────────
-
 app = FastAPI(
     title=settings.APP_NAME,
     version="0.1.0",
     description="AI-powered portfolio generator API",
-    # Hide docs in production — they expose schema info and can be used for
-    # automated attack reconnaissance.
+    
     docs_url=f"{settings.API_V1_PREFIX}/docs" if not settings.is_production else None,
     redoc_url=f"{settings.API_V1_PREFIX}/redoc" if not settings.is_production else None,
     openapi_url=f"{settings.API_V1_PREFIX}/openapi.json" if not settings.is_production else None,
 )
 
-# Bootstrap OpenTelemetry traces (no-op when OTEL_EXPORTER_OTLP_ENDPOINT
-# isn't set or the OTel packages aren't installed).
 init_otel(app)
-
-# ── Rate limiting ──────────────────────────────────────────────────────────────
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
 
-# ── CORS ───────────────────────────────────────────────────────────────────────
-# Origins are loaded from settings (which reads from env vars / .env).
-# In production, settings.CORS_ORIGINS must be an explicit allowlist — never "*".
-# The validate_production_config() function called at startup enforces this.
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
     allow_credentials=settings.CORS_ALLOW_CREDENTIALS,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # explicit, not wildcard
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],  
     allow_headers=["Authorization", "Content-Type", "X-Requested-With"],
 )
-
-
-# ── Request size limit middleware ──────────────────────────────────────────────
-# Reject oversized requests before they reach any business logic.
-# This is a defense-in-depth layer on top of the per-endpoint size checks.
-# Without this, an attacker could send a 1 GB payload to ANY endpoint (including
-# unauthenticated ones) and exhaust server memory / network bandwidth.
 
 @app.middleware("http")
 async def enforce_request_size_limit(request: Request, call_next):
@@ -121,32 +100,22 @@ async def enforce_request_size_limit(request: Request, call_next):
                     content={"detail": "Request body too large (max 10 MB)"},
                 )
         except ValueError:
-            pass  # malformed Content-Length — let it through; body read will catch it
+            pass  
     return await call_next(request)
-
-
-# ── DDoS hardening middleware (v3.3.1) ─────────────────────────────────────────
-# Cheap drops at the edge: no User-Agent, obvious scanner paths, etc.
-# Doesn't replace Cloudflare/WAF — runs *in addition* so the API stays safe
-# when the CDN is bypassed (direct IP, wrong DNS, internal traffic).
 
 _SUSPICIOUS_PATH_TOKENS = (
     "/wp-admin", "/wp-login", "/xmlrpc.php", "/.env", "/.git/",
     "/phpmyadmin", "/.aws/", "/.ssh/", "/etc/passwd",
 )
 
-
 @app.middleware("http")
 async def ddos_hardening(request: Request, call_next):
     path = request.url.path
-    # 1. Drop common scanner probes before any handler is invoked.
+    
     low = path.lower()
     if any(tok in low for tok in _SUSPICIOUS_PATH_TOKENS):
         return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"detail": "Not Found"})
 
-    # 2. Require a User-Agent on POST/PUT/PATCH/DELETE — curl includes one by
-    #    default; botnets often omit it. GET stays permissive (legitimate
-    #    crawlers, health checks).
     if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
         ua = request.headers.get("user-agent", "").strip()
         if not ua or len(ua) < 3:
@@ -157,19 +126,9 @@ async def ddos_hardening(request: Request, call_next):
 
     response = await call_next(request)
 
-    # 3. Long-lived edge cache on public portfolio HTML so a Cloudflare/CDN
-    #    in front absorbs view spikes without origin hits.
     if path.startswith("/api/v1/portfolio/p/") or path.startswith("/portfolio/p/"):
         response.headers.setdefault("Cache-Control", "public, max-age=300, s-maxage=900")
     return response
-
-
-# ── Security headers middleware ────────────────────────────────────────────────
-# These headers are a defense-in-depth measure. Even though the Next.js frontend
-# also sets headers, the API backend must set them too because:
-#   1. API responses may be consumed directly (e.g., mobile apps, curl).
-#   2. Backend and frontend may have separate domain/subdomain configurations.
-#   3. CSP and X-Frame-Options on the API prevent clickjacking of API responses.
 
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
@@ -214,18 +173,12 @@ async def add_security_headers(request: Request, call_next):
     response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
     response.headers["Content-Security-Policy"] = security_settings.CONTENT_SECURITY_POLICY
 
-    # HSTS: only set in production — local HTTP dev would break if we sent this
     if settings.is_production:
         response.headers["Strict-Transport-Security"] = (
             "max-age=63072000; includeSubDomains"
         )
 
     return response
-
-
-# ── Correlation ID middleware ──────────────────────────────────────────────────
-# Must run before timing so the correlation_id is available to all log lines
-# emitted during the request.
 
 @app.middleware("http")
 async def correlation_id_middleware(request: Request, call_next):
@@ -234,11 +187,8 @@ async def correlation_id_middleware(request: Request, call_next):
     set_correlation_id(cid)
     response = await call_next(request)
     response.headers["X-Correlation-ID"] = cid
-    response.headers["X-Request-ID"] = cid  # alias for clients that expect this name
+    response.headers["X-Request-ID"] = cid  
     return response
-
-
-# ── Request timing ─────────────────────────────────────────────────────────────
 
 @app.middleware("http")
 async def add_request_timing(request: Request, call_next):
@@ -248,9 +198,6 @@ async def add_request_timing(request: Request, call_next):
     duration_ms = (time.perf_counter() - start) * 1000
     response.headers["X-Process-Time"] = f"{duration_ms:.2f}ms"
     return response
-
-
-# ── Global exception handlers ──────────────────────────────────────────────────
 
 @app.exception_handler(PortifyBaseException)
 async def portify_exception_handler(request: Request, exc: PortifyBaseException):
@@ -265,7 +212,6 @@ async def portify_exception_handler(request: Request, exc: PortifyBaseException)
         },
     )
 
-
 @app.exception_handler(404)
 async def not_found_handler(request: Request, exc):
     return JSONResponse(
@@ -277,7 +223,6 @@ async def not_found_handler(request: Request, exc):
             "correlation_id": get_correlation_id(),
         },
     )
-
 
 @app.exception_handler(500)
 async def internal_error_handler(request: Request, exc):
@@ -297,13 +242,9 @@ async def internal_error_handler(request: Request, exc):
         },
     )
 
-
-# ── Lifespan events ────────────────────────────────────────────────────────────
-
 @app.on_event("startup")
 async def on_startup() -> None:
-    # Run production config validation — raises on misconfiguration so the
-    # server fails fast rather than running in an insecure state.
+    
     from app.core.config import validate_production_config
     validate_production_config()
 
@@ -315,7 +256,6 @@ async def on_startup() -> None:
         extra={"event": "startup"},
     )
 
-
 @app.on_event("shutdown")
 async def on_shutdown() -> None:
     from app.core.cache import cache
@@ -323,9 +263,6 @@ async def on_shutdown() -> None:
     await cache.close()
     await engine.dispose()
     logger.info("Database engine disposed. Goodbye.")
-
-
-# ── Routers ────────────────────────────────────────────────────────────────────
 
 app.include_router(auth.router,      prefix=settings.API_V1_PREFIX)
 app.include_router(resume.router,    prefix=settings.API_V1_PREFIX)
@@ -345,19 +282,14 @@ app.include_router(bulk_export.router,  prefix=settings.API_V1_PREFIX)
 app.include_router(clerk_webhook.router, prefix=settings.API_V1_PREFIX)
 app.include_router(admin_users.router,   prefix=settings.API_V1_PREFIX)
 
-
-# ── Health checks ──────────────────────────────────────────────────────────────
-
 @app.get("/health", tags=["Health"], summary="Liveness probe")
 async def health() -> dict:
     """Returns 200 OK if the server process is alive. Used by load-balancer liveness checks."""
     return {"status": "ok", "version": "0.1.0", "environment": settings.ENVIRONMENT}
 
-
 @app.get(f"{settings.API_V1_PREFIX}/health", tags=["Health"], summary="Versioned liveness probe")
 async def health_v1() -> dict:
     return {"status": "ok", "version": "0.1.0", "environment": settings.ENVIRONMENT}
-
 
 @app.get(f"{settings.API_V1_PREFIX}/health/ready", tags=["Health"], summary="Readiness probe")
 async def health_ready() -> JSONResponse:
@@ -373,7 +305,6 @@ async def health_ready() -> JSONResponse:
     result: dict[str, str] = {"db": "unknown", "redis": "unknown", "status": "unknown"}
     ok = True
 
-    # ── Database ping ──────────────────────────────────────────────────────
     try:
         async with AsyncSessionLocal() as session:
             await session.execute(text("SELECT 1"))
@@ -383,7 +314,6 @@ async def health_ready() -> JSONResponse:
         result["db"] = "error"
         ok = False
 
-    # ── Redis ping ─────────────────────────────────────────────────────────
     try:
         await cache.client.ping()
         result["redis"] = "ok"
@@ -397,7 +327,6 @@ async def health_ready() -> JSONResponse:
         status_code=status.HTTP_200_OK if ok else status.HTTP_503_SERVICE_UNAVAILABLE,
         content=result,
     )
-
 
 @app.get(f"{settings.API_V1_PREFIX}/metrics/summary", tags=["Metrics"], summary="Non-sensitive runtime metrics")
 async def metrics_summary() -> dict:
