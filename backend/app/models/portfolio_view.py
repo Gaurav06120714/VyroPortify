@@ -21,7 +21,6 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.db.base import Base
 from app.models.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 
-
 class PortfolioView(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "portfolio_views"
     __table_args__ = (
@@ -33,8 +32,7 @@ class PortfolioView(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         ForeignKey("portfolios.id", ondelete="CASCADE"),
         nullable=False,
     )
-    # SHA-256(ip + day + ua) — same visitor on the same day across page
-    # loads collapses to a single token. PII-free.
+    
     session_token: Mapped[str] = mapped_column(String(64), nullable=False)
     referrer: Mapped[str | None] = mapped_column(String(255), nullable=True)
     country: Mapped[str | None] = mapped_column(String(2), nullable=True)
