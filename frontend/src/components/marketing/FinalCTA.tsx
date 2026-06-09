@@ -6,7 +6,7 @@ import { ArrowRight } from "lucide-react";
 export default function FinalCTA() {
   return (
     <section className="relative px-6 py-28">
-      {/* Border top */}
+      {}
       <div className="pointer-events-none absolute left-1/2 top-0 h-px w-3/4 -translate-x-1/2 bg-border" />
 
       <div className="relative mx-auto max-w-4xl text-center">
