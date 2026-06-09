@@ -15,10 +15,7 @@ from __future__ import annotations
 import uuid
 from contextvars import ContextVar
 
-# ContextVar lives per-async-task (i.e. per request in FastAPI).
-# Default is empty string so get_correlation_id() always returns a string.
 correlation_id_var: ContextVar[str] = ContextVar("correlation_id", default="")
-
 
 def get_correlation_id() -> str:
     """Return the current correlation ID, generating a new one if unset."""
@@ -27,7 +24,6 @@ def get_correlation_id() -> str:
         cid = str(uuid.uuid4())
         correlation_id_var.set(cid)
     return cid
-
 
 def set_correlation_id(cid: str) -> None:
     """Explicitly set the correlation ID (called from middleware)."""
