@@ -1,15 +1,8 @@
-/**
- * Tests for PlanContext.
- *
- * Tests: default free plan, plan update after API call, loading state.
- */
-
 import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, act, waitFor } from "@testing-library/react";
 import { renderHook } from "@testing-library/react";
 
-// Mock Clerk
 const mockGetToken = vi.fn().mockResolvedValue("mock-token");
 const mockIsSignedIn = vi.fn(() => true);
 
@@ -21,7 +14,6 @@ vi.mock("@clerk/nextjs", () => ({
   }),
 }));
 
-// Mock API
 const mockGetBillingStatus = vi.fn();
 
 vi.mock("@/lib/api", () => ({
@@ -60,13 +52,13 @@ describe("PlanContext", () => {
   it("provides 'free' plan by default before API call", () => {
     mockGetBillingStatus.mockResolvedValue({ plan: "free" });
     renderWithProvider();
-    // Immediately before the async effect — plan should be "free"
+    
     expect(screen.getByTestId("plan").textContent).toBe("free");
   });
 
   it("shows loading=true initially when signed in", () => {
     mockGetBillingStatus.mockImplementation(
-      () => new Promise(() => {}), // never resolves
+      () => new Promise(() => {}), 
     );
     renderWithProvider();
     expect(screen.getByTestId("loading").textContent).toBe("true");
