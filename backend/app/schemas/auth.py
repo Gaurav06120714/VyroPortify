@@ -9,8 +9,6 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
-# ── Request schemas ────────────────────────────────────────────────────────────
-
 class RegisterRequest(BaseModel):
     """Body for POST /auth/register."""
 
@@ -27,15 +25,11 @@ class RegisterRequest(BaseModel):
             raise ValueError("Password must contain at least one digit")
         return v
 
-
 class LoginRequest(BaseModel):
     """Body for POST /auth/login."""
 
     email: EmailStr
     password: str
-
-
-# ── Response schemas ───────────────────────────────────────────────────────────
 
 class TokenResponse(BaseModel):
     """JWT token pair returned after successful auth."""
@@ -43,8 +37,7 @@ class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
-    expires_in: int  # seconds until access token expires
-
+    expires_in: int  
 
 class UserResponse(BaseModel):
     """Safe public representation of a User (no password hash)."""
@@ -58,7 +51,6 @@ class UserResponse(BaseModel):
     plan: str
     created_at: datetime
     updated_at: datetime
-
 
 class TokenWithUserResponse(BaseModel):
     """Combined token + user returned on register and login."""
