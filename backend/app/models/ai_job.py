@@ -11,7 +11,6 @@ from app.models.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 if TYPE_CHECKING:
     from app.models.user import User
 
-
 class AIJob(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Async AI processing job (resume parsing, portfolio generation, etc.)."""
 
@@ -38,7 +37,6 @@ class AIJob(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     tokens_used: Mapped[int | None] = mapped_column(Integer, nullable=True)
     duration_ms: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
 
-    # Relationships
     user: Mapped["User"] = relationship(back_populates="ai_jobs")
 
     def __repr__(self) -> str:
