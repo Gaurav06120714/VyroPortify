@@ -3,10 +3,10 @@
 import { useEffect } from "react";
 
 export interface Shortcut {
-  // Lower-cased key the listener compares against (e.g. "k", "?", "/").
+  
   key: string;
-  // Modifier keys — undefined means "don't care".
-  mod?: boolean;   // Ctrl on Win/Linux, Cmd on macOS
+  
+  mod?: boolean;   
   shift?: boolean;
   alt?: boolean;
   description?: string;
@@ -17,9 +17,7 @@ const isMac =
   typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
 
 function matches(e: KeyboardEvent, s: Shortcut): boolean {
-  // Clerk's hosted SignIn/SignUp components dispatch synthetic key events
-  // without `e.key` set (autofill, browser autocomplete on iOS). Guard
-  // against that — without `key` the shortcut can't match anyway.
+  
   if (!e.key || typeof e.key !== "string") return false;
   if (e.key.toLowerCase() !== s.key.toLowerCase()) return false;
   const mod = isMac ? e.metaKey : e.ctrlKey;
@@ -29,9 +27,6 @@ function matches(e: KeyboardEvent, s: Shortcut): boolean {
   return true;
 }
 
-// Skip shortcuts when the user is typing in a form field — except for
-// shortcuts that explicitly require a modifier (those should still fire
-// from inside an input).
 function shouldIgnoreEvent(e: KeyboardEvent, s: Shortcut): boolean {
   const t = e.target as HTMLElement | null;
   if (!t) return false;
@@ -42,7 +37,7 @@ function shouldIgnoreEvent(e: KeyboardEvent, s: Shortcut): boolean {
     tag === "SELECT" ||
     t.isContentEditable;
   if (!editable) return false;
-  // Allow Cmd/Ctrl-modified shortcuts even in inputs.
+  
   return !s.mod;
 }
 
