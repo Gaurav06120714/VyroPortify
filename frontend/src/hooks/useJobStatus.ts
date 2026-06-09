@@ -23,7 +23,6 @@ function statusToPhase(status: PortfolioStatus["status"]): JobPhase {
   }
 }
 
-// Used to advance phase from backend status — kept for future direct mapping
 void statusToPhase;
 
 interface UseJobStatusResult {
@@ -34,8 +33,6 @@ interface UseJobStatusResult {
 
 const POLL_INTERVAL_MS = 3000;
 
-// Simulated phase progression while backend is in "generating" state
-// so the UI shows animated steps rather than staying frozen on one step.
 const PHASE_SEQUENCE: JobPhase[] = ["parsing", "enhancing", "building", "finishing"];
 
 export function useJobStatus(jobId: string): UseJobStatusResult {
@@ -44,7 +41,6 @@ export function useJobStatus(jobId: string): UseJobStatusResult {
   const [portfolioStatus, setPortfolioStatus] = useState<PortfolioStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Track simulated visual phase index separately from real backend phase
   const _visualPhaseIdx = useRef(0); void _visualPhaseIdx;
   const stopped = useRef(false);
 
@@ -82,7 +78,7 @@ export function useJobStatus(jobId: string): UseJobStatusResult {
           return;
         }
       } catch {
-        // silently keep polling on transient errors
+        
       }
 
       if (!stopped.current) {
@@ -90,7 +86,6 @@ export function useJobStatus(jobId: string): UseJobStatusResult {
       }
     };
 
-    // Advance visual phase every ~5s to give progress feeling
     const tick = () => {
       if (stopped.current) return;
       advance();
