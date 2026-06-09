@@ -25,7 +25,6 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.db.base import Base
 from app.models.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 
-
 class AuditEvent(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "audit_events"
     __table_args__ = (
@@ -43,10 +42,9 @@ class AuditEvent(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,
     )
-    # e.g. "portfolio.publish", "membership.invite", "billing.upgrade"
+    
     action: Mapped[str] = mapped_column(String(80), nullable=False)
     target_type: Mapped[str | None] = mapped_column(String(40), nullable=True)
     target_id: Mapped[str | None] = mapped_column(String(80), nullable=True)
-    # Arbitrary structured context. Must never contain PII or secrets —
-    # callers are responsible for redaction at the source.
+    
     meta: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
