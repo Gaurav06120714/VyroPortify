@@ -4,9 +4,6 @@ import { forwardRef } from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
-// shadcn-style Button. Tokens come from globals.css so dark/light parity is
-// automatic. Variants chosen to cover the four CTAs we actually use today;
-// adding more is cheap.
 const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 whitespace-nowrap font-semibold " +
     "transition-colors focus-visible:outline-none disabled:pointer-events-none " +
