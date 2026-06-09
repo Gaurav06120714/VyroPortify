@@ -33,7 +33,6 @@ export default function ProfileDropdown() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Close on outside click
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) {
@@ -44,7 +43,6 @@ export default function ProfileDropdown() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  // Close on escape
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if (e.key === "Escape") setOpen(false);
@@ -146,7 +144,7 @@ export default function ProfileDropdown() {
                 : "0 20px 60px rgba(0,0,0,0.5)",
             }}
           >
-            {/* User info header */}
+            {}
             <div
               className="border-b px-4 py-3"
               style={{ borderColor: isLight ? "rgba(0,0,0,0.06)" : "var(--pf-border-dim)" }}
@@ -182,7 +180,7 @@ export default function ProfileDropdown() {
               </div>
             </div>
 
-            {/* Menu items */}
+            {}
             <div className="py-1.5">
               {MENU_ITEMS.map(({ href, label, icon: Icon }) => (
                 <Link
@@ -206,7 +204,7 @@ export default function ProfileDropdown() {
               ))}
             </div>
 
-            {/* Logout */}
+            {}
             <div
               className="border-t py-1.5"
               style={{ borderColor: isLight ? "rgba(0,0,0,0.06)" : "var(--pf-border-dim)" }}
