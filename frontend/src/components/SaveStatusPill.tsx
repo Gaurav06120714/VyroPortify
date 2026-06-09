@@ -11,10 +11,6 @@ interface Props {
   errorMessage?: string | null;
 }
 
-/**
- * Small pill that reads "Saved · 2s ago" / "Saving…" / "Save failed".
- * Updates the relative time every 30s so the user has a live, honest signal.
- */
 export function SaveStatusPill({ status, lastSavedAt, errorMessage }: Props) {
   const [, force] = useState(0);
 
