@@ -19,7 +19,6 @@ role (which arrives in v3.0). Trivially extended later by swapping
 the dependency in `_require_moderator`.
 """
 
-
 import logging
 import re
 import uuid
@@ -40,9 +39,6 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/marketplace", tags=["Marketplace"])
 
-
-# ── Schemas ───────────────────────────────────────────────────────────────────
-
 class TemplateSubmit(BaseModel):
     id: str = Field(min_length=2, max_length=100, pattern=r"^[a-z0-9-]+$")
     name: str = Field(min_length=2, max_length=255)
@@ -52,19 +48,12 @@ class TemplateSubmit(BaseModel):
     price_cents: int = Field(default=0, ge=0, le=100_000)
     config: dict | None = None
 
-
 class ModerateAction(BaseModel):
     action: str = Field(pattern="^(approve|reject)$")
     reason: str | None = Field(default=None, max_length=400)
 
-
 class TemplateOut(BaseModel):
-    # B20 fix: serialize rating_average as a JSON number (float) not a
-    # Decimal/string. Pydantic v2 emits Decimal as a string by default,
-    # which forced every frontend consumer to Number(t.rating_average).
-    # arbitrary_types_allowed=False (default) combined with the float
-    # annotation triggers Pydantic's automatic Decimal → float coercion
-    # for ORM-attribute reads.
+    
     model_config = ConfigDict(from_attributes=True)
 
     id: str
@@ -80,11 +69,9 @@ class TemplateOut(BaseModel):
     rating_average: float
     rating_count: int
 
-
 class ReviewIn(BaseModel):
     rating: int = Field(ge=1, le=5)
     comment: str | None = Field(default=None, max_length=2000)
-
 
 class ReviewOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -94,9 +81,6 @@ class ReviewOut(BaseModel):
     user_id: uuid.UUID
     rating: int
     comment: str | None
-
-
-# ── Moderator dependency ─────────────────────────────────────────────────────
 
 async def _require_moderator(current_user: CurrentUser, db: DB) -> User:
     """Owner of any non-personal org. See module docstring for the rationale."""
@@ -116,9 +100,6 @@ async def _require_moderator(current_user: CurrentUser, db: DB) -> User:
             detail="Moderator privileges required",
         )
     return current_user
-
-
-# ── GET / (list) ─────────────────────────────────────────────────────────────
 
 @router.get(
     "/templates",
@@ -163,15 +144,12 @@ async def list_templates(
         stmt = stmt.order_by(Template.price_cents.asc())
     elif sort == "price_high":
         stmt = stmt.order_by(Template.price_cents.desc())
-    else:  # popular
+    else:  
         stmt = stmt.order_by(desc(Template.downloads_count), desc(Template.rating_average))
 
     stmt = stmt.limit(limit).offset(offset)
     rows = (await db.execute(stmt)).scalars().all()
     return [TemplateOut.model_validate(t) for t in rows]
-
-
-# ── GET /{id} (detail) ───────────────────────────────────────────────────────
 
 @router.get(
     "/templates/{template_id}",
@@ -184,11 +162,7 @@ async def get_template(template_id: str, db: DB) -> TemplateOut:
         raise HTTPException(status_code=404, detail="Template not found")
     return TemplateOut.model_validate(t)
 
-
-# ── POST / (submit) ──────────────────────────────────────────────────────────
-
 _SLUG_RE = re.compile(r"^[a-z0-9-]+$")
-
 
 @router.post(
     "/templates",
@@ -202,27 +176,12 @@ async def submit_template(
     if not _SLUG_RE.match(body.id):
         raise HTTPException(status_code=400, detail="Template id must be lowercase a-z, 0-9, hyphens only")
 
-    # B11 fix: race-free duplicate-id handling. The check-then-insert
-    # pattern (db.get + db.add) has a TOCTOU window where two
-    # concurrent submissions for the same slug both see no row and
-    # both insert — second one explodes on the PK constraint as a
-    # generic IntegrityError → 500. We keep the cheap pre-check for
-    # the common case (gives clean 409 immediately) AND wrap the
-    # commit so the race-window 500 collapses to 409.
     from sqlalchemy.exc import IntegrityError
 
     existing = await db.get(Template, body.id)
     if existing is not None:
         raise HTTPException(status_code=409, detail="Template id already exists")
 
-    # B13/B21 fix: don't set is_pro=(price_cents > 0). is_pro means
-    # "requires a Pro subscription to use", which is a separate axis
-    # from "this template is paid". Community-submitted paid
-    # templates can be purchased à la carte regardless of the
-    # buyer's Pro status — gating on is_pro would force users to
-    # buy Pro AND pay for the template. Default new submissions to
-    # is_pro=False; only the moderator (or a future paid-feature
-    # field) can flip it.
     t = Template(
         id=body.id,
         name=body.name,
@@ -246,9 +205,6 @@ async def submit_template(
     await db.refresh(t)
     logger.info("template_submitted id=%s author=%s", t.id, current_user.id)
     return TemplateOut.model_validate(t)
-
-
-# ── POST /{id}/moderate ──────────────────────────────────────────────────────
 
 @router.post(
     "/templates/{template_id}/moderate",
@@ -276,9 +232,6 @@ async def moderate_template(
     )
     return TemplateOut.model_validate(t)
 
-
-# ── Reviews (v2.1.2) ─────────────────────────────────────────────────────────
-
 @router.get(
     "/templates/{template_id}/reviews",
     response_model=list[ReviewOut],
@@ -300,7 +253,6 @@ async def list_reviews(
     ).scalars().all()
     return [ReviewOut.model_validate(r) for r in rows]
 
-
 @router.post(
     "/templates/{template_id}/reviews",
     response_model=ReviewOut,
@@ -313,16 +265,14 @@ async def add_review(
     current_user: CurrentUser,
     db: DB,
 ) -> ReviewOut:
-    # Refuse reviewing a non-existent or non-approved template.
+    
     tpl = await db.get(Template, template_id)
     if tpl is None or tpl.status != "approved":
         raise HTTPException(status_code=404, detail="Template not found")
 
-    # Authors can't pad their own template's rating.
     if tpl.author_user_id == current_user.id:
         raise HTTPException(status_code=400, detail="You can't review your own template")
 
-    # Upsert (template_id, user_id) — unique constraint enforces dedupe.
     stmt = (
         pg_insert(TemplateReview)
         .values(
@@ -340,8 +290,6 @@ async def add_review(
     result = await db.execute(stmt)
     review = result.scalar_one()
 
-    # Refresh the rating cache on the template row. Done in the same
-    # transaction so a partial state can't leak.
     agg = await db.execute(
         select(
             func.coalesce(func.avg(TemplateReview.rating), 0).label("avg"),
