@@ -43,21 +43,14 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/portfolio", tags=["Portfolio"])
 
-
-# ── Helpers ────────────────────────────────────────────────────────────────────
-
 def _slugify(name: str, user_id: uuid.UUID) -> str:
-    # Bug fix: previous shape `{name}-{user_id[:8]}` collapsed to a single
-    # slug per user, so a second portfolio attempt 500'd on the unique
-    # constraint uq_portfolios_slug. Append a random suffix so every
-    # build attempt gets its own URL — collisions are 1-in-16M per user.
+    
     slug = name.lower().strip()
     slug = re.sub(r"[^a-z0-9\s-]", "", slug)
     slug = re.sub(r"\s+", "-", slug)
     slug = slug[:30]
     suffix = uuid.uuid4().hex[:6]
     return f"{slug}-{str(user_id)[:6]}-{suffix}"
-
 
 async def _get_portfolio_or_404(
     portfolio_id: uuid.UUID,
@@ -66,9 +59,7 @@ async def _get_portfolio_or_404(
     *,
     min_role: str = "viewer",
 ) -> Portfolio:
-    # B4: ownership OR org membership. min_role lets mutating routes
-    # require "editor" while read paths accept "viewer". Default keeps
-    # current behavior backwards-compatible for read endpoints.
+    
     from app.core.authz import assert_resource_access
 
     result = await db.execute(
@@ -77,7 +68,6 @@ async def _get_portfolio_or_404(
     return await assert_resource_access(
         db, result.scalar_one_or_none(), user, min_role=min_role,
     )
-
 
 def _to_response(p: Portfolio) -> PortfolioResponse:
     return PortfolioResponse(
@@ -95,9 +85,6 @@ def _to_response(p: Portfolio) -> PortfolioResponse:
         updated_at=p.updated_at,
     )
 
-
-# ── POST /generate ─────────────────────────────────────────────────────────────
-
 @router.post(
     "/generate",
     response_model=GeneratePortfolioResponse,
@@ -111,9 +98,9 @@ async def generate_portfolio(
     current_user: CurrentUser,
     db: DB,
 ) -> GeneratePortfolioResponse:
-    # ── Free-tier enforcement ──────────────────────────────────────────────────
+    
     FREE_PORTFOLIO_LIMIT = 3
-    FREE_TEMPLATES = {TemplateID.AURORA}  # free users may only use the aurora template
+    FREE_TEMPLATES = {TemplateID.AURORA}  
 
     if current_user.plan == Plan.FREE:
         count = await db.scalar(
@@ -134,7 +121,6 @@ async def generate_portfolio(
                 "Upgrade to access all templates."
             )
 
-    # Verify resume belongs to user and is parsed
     result = await db.execute(
         select(Resume).where(
             Resume.id == body.resume_id, Resume.user_id == current_user.id
@@ -149,11 +135,9 @@ async def generate_portfolio(
             detail="Resume parsing is not complete yet. Poll /resume/{id}/status first.",
         )
 
-    # Build slug from parsed name
     name = resume.parsed_data.get("full_name", str(current_user.id))
     slug = _slugify(name, current_user.id)
 
-    # Create portfolio record
     portfolio = Portfolio(
         user_id=current_user.id,
         resume_id=body.resume_id,
@@ -164,7 +148,6 @@ async def generate_portfolio(
     db.add(portfolio)
     await db.flush()
 
-    # Enqueue Celery task
     job_queued = False
     try:
         from app.workers.tasks.generate_portfolio import generate_portfolio_task
@@ -179,9 +162,6 @@ async def generate_portfolio(
         job_queued=job_queued,
         message="Portfolio generation started. Poll /portfolio/{id}/status for updates.",
     )
-
-
-# ── GET /{id}/status ───────────────────────────────────────────────────────────
 
 @router.get(
     "/{portfolio_id}/status",
@@ -199,9 +179,6 @@ async def get_portfolio_status(
         id=p.id, status=p.status, html_url=p.html_url, slug=p.slug, ai_fallback=ai_fallback
     )
 
-
-# ── GET / (list) ───────────────────────────────────────────────────────────────
-
 @router.get(
     "/",
     response_model=PortfolioListResponse,
@@ -213,9 +190,7 @@ async def list_portfolios(
     limit: int = 20,
     offset: int = 0,
 ) -> PortfolioListResponse:
-    # Offset pagination (v1.2.4). Cap limit so a malicious client can't
-    # request 100k rows and OOM the server. Total is returned so the FE
-    # can render "x of N" without a second roundtrip.
+    
     limit = max(1, min(limit, 100))
     offset = max(0, offset)
 
@@ -234,9 +209,6 @@ async def list_portfolios(
     portfolios = rows.scalars().all()
     return PortfolioListResponse(items=[_to_response(p) for p in portfolios], total=total)
 
-
-# ── GET /sitemap — public slugs for sitemap.xml ───────────────────────────────
-
 @router.get(
     "/sitemap",
     summary="Return public portfolio slugs for sitemap generation (no auth)",
@@ -251,16 +223,13 @@ async def portfolio_sitemap(db: DB) -> list[dict]:
 
     rows = await db.execute(
         select(Portfolio.slug, Portfolio.updated_at)
-        .where(Portfolio.is_public.is_(True), Portfolio.status == "published")  # noqa: E501
+        .where(Portfolio.is_public.is_(True), Portfolio.status == "published")  
         .order_by(Portfolio.updated_at.desc())
         .limit(5000)
     )
     items = [{"slug": row.slug, "updated_at": row.updated_at.isoformat()} for row in rows]
     await cache.set(cache_key, items, ttl=TEMPLATE_LIST_TTL)
     return items
-
-
-# ── GET /p/{slug} — PUBLIC ─────────────────────────────────────────────────────
 
 @router.get(
     "/p/{slug}",
@@ -271,7 +240,6 @@ async def portfolio_sitemap(db: DB) -> list[dict]:
 async def get_public_portfolio(request: Request, slug: str, db: DB) -> PortfolioResponse:
     cache_key = f"portfolio:public:{slug}"
 
-    # Try cache first
     cached = await cache.get(cache_key)
     if cached:
         logger.debug("Cache HIT portfolio slug=%s", slug)
@@ -284,14 +252,6 @@ async def get_public_portfolio(request: Request, slug: str, db: DB) -> Portfolio
     if p is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Portfolio not found")
 
-    # Increment view counter (best-effort, async) + insert a PortfolioView
-    # row for per-visitor analytics. Session token is SHA-256(ip + UA + day)
-    # so the same visitor on the same day collapses, no PII stored.
-    #
-    # B16 fix: increment via UPDATE … SET views = views + 1 instead of
-    # read-modify-write on the ORM instance. Two concurrent requests
-    # would both read N, both write N+1 → undercount by 1 per race.
-    # Atomic SQL increment is collision-free.
     try:
         import hashlib
         from datetime import date
@@ -300,10 +260,6 @@ async def get_public_portfolio(request: Request, slug: str, db: DB) -> Portfolio
 
         from app.models.portfolio_view import PortfolioView
 
-        # synchronize_session=False: the UPDATE doesn't need to invalidate
-        # the in-memory `p` object. Without this, SQLAlchemy expires
-        # `p`'s attributes and the subsequent _to_response(p) triggers
-        # a lazy reload outside the greenlet context → MissingGreenlet.
         await db.execute(
             update(Portfolio)
             .where(Portfolio.id == p.id)
@@ -317,7 +273,7 @@ async def get_public_portfolio(request: Request, slug: str, db: DB) -> Portfolio
             f"{client_ip}|{ua}|{date.today().isoformat()}".encode()
         ).hexdigest()
         referrer = (request.headers.get("referer") or "")[:255] or None
-        # CF-IPCountry / Vercel-IP-Country provide ISO-2 country codes for free.
+        
         country = (
             request.headers.get("cf-ipcountry")
             or request.headers.get("x-vercel-ip-country")
@@ -331,26 +287,16 @@ async def get_public_portfolio(request: Request, slug: str, db: DB) -> Portfolio
                 country=country,
             )
         )
-        # Snapshot the ORM row into the Pydantic response BEFORE commit.
-        # SQLAlchemy expires attributes on commit by default; reading them
-        # afterwards triggers a lazy refresh that runs outside the
-        # greenlet context → MissingGreenlet. We had `_to_response(p)`
-        # AFTER `db.commit()` and FastAPI's response serializer then
-        # 500'd on every public page load.
+        
         response = _to_response(p)
         await db.commit()
     except Exception:
-        # Analytics failures must never 500 a public page view.
-        # Make sure response is still defined for the cache write below.
+        
         response = _to_response(p)
 
-    # Cache for 1 hour
     await cache.set(cache_key, response.model_dump(), ttl=PORTFOLIO_PAGE_TTL)
 
     return response
-
-
-# ── PUT /{id}/publish ──────────────────────────────────────────────────────────
 
 @router.put(
     "/{portfolio_id}/publish",
@@ -365,13 +311,10 @@ async def toggle_publish(
     p = await _get_portfolio_or_404(portfolio_id, current_user, db, min_role="editor")
     p.is_public = not p.is_public
     await db.commit()
-    # Invalidate public cache
+    
     if p.slug:
         await cache.delete(f"portfolio:public:{p.slug}")
     return _to_response(p)
-
-
-# ── DELETE /{id} ───────────────────────────────────────────────────────────────
 
 @router.delete(
     "/{portfolio_id}",
@@ -384,14 +327,11 @@ async def delete_portfolio(
     db: DB,
 ) -> None:
     p = await _get_portfolio_or_404(portfolio_id, current_user, db, min_role="editor")
-    # Invalidate public cache before deletion
+    
     if p.slug:
         await cache.delete(f"portfolio:public:{p.slug}")
     await db.delete(p)
     logger.info("Portfolio deleted id=%s user=%s", portfolio_id, current_user.id)
-
-
-# ── Analytics (v2.0.3) ─────────────────────────────────────────────────────────
 
 @router.get(
     "/{portfolio_id}/analytics",
@@ -414,7 +354,6 @@ async def portfolio_analytics(
     days = max(1, min(days, 365))
     since = datetime.now(timezone.utc) - timedelta(days=days)
 
-    # Total + unique visitors in the window.
     totals_q = await db.execute(
         select(
             sql_func.count(PortfolioView.id).label("total"),
@@ -426,8 +365,6 @@ async def portfolio_analytics(
     )
     totals = totals_q.one()
 
-    # Per-day buckets — server-formatted as ISO date strings for the
-    # frontend to drop straight into a chart.
     by_day_q = await db.execute(
         select(
             sql_func.date_trunc("day", PortfolioView.created_at).label("day"),
@@ -445,7 +382,6 @@ async def portfolio_analytics(
         for d, c in by_day_q.all()
     ]
 
-    # Top referrers + top countries (capped).
     referrers_q = await db.execute(
         select(
             PortfolioView.referrer,
@@ -493,18 +429,6 @@ async def portfolio_analytics(
         "countries": countries,
     }
 
-
-# ── Custom domain (Pro) ────────────────────────────────────────────────────────
-# Three endpoints back the custom-domain feature:
-#   PUT    /{id}/custom-domain   attach a domain (validate + store, Pro-only)
-#   GET    /{id}/custom-domain   poll DNS verification status
-#   DELETE /{id}/custom-domain   detach
-#
-# We don't persist a `verified` flag yet. CNAME state can change at any time,
-# so the source of truth is always a live DNS lookup. The endpoint is cheap
-# (one CNAME query, sub-50ms) and frontends will poll it during setup only.
-
-
 def _domain_response(p: Portfolio, result: domain_verification.VerificationResult | None) -> CustomDomainResponse:
     if result is None:
         return CustomDomainResponse(
@@ -523,7 +447,6 @@ def _domain_response(p: Portfolio, result: domain_verification.VerificationResul
         expected_target=result.expected_target,
         detail=result.detail,
     )
-
 
 @router.put(
     "/{portfolio_id}/custom-domain",
@@ -544,9 +467,6 @@ async def attach_custom_domain(
     except domain_verification.DomainValidationError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
-    # Uniqueness check: the case-insensitive partial unique index in the DB is
-    # the source of truth, but a pre-check gives a clean 409 instead of a
-    # generic 500 on IntegrityError.
     existing = await db.execute(
         select(Portfolio).where(
             func.lower(Portfolio.custom_domain) == domain,
@@ -560,14 +480,12 @@ async def attach_custom_domain(
     await db.commit()
     await cache.delete(f"portfolio:public:{p.slug}")
 
-    # Run DNS lookup off the event loop — dnspython is blocking.
     result = await anyio.to_thread.run_sync(domain_verification.verify_cname, domain)
     logger.info(
         "custom_domain_attached portfolio=%s domain=%s verified=%s",
         portfolio_id, domain, result.verified,
     )
     return _domain_response(p, result)
-
 
 @router.get(
     "/{portfolio_id}/custom-domain",
@@ -579,7 +497,7 @@ async def get_custom_domain(
     current_user: CurrentUser,
     db: DB,
 ) -> CustomDomainResponse:
-    # Read endpoint — viewer role is enough.
+    
     p = await _get_portfolio_or_404(portfolio_id, current_user, db)
     if not p.custom_domain:
         return _domain_response(p, None)
@@ -588,7 +506,6 @@ async def get_custom_domain(
         domain_verification.verify_cname, p.custom_domain
     )
     return _domain_response(p, result)
-
 
 @router.delete(
     "/{portfolio_id}/custom-domain",
