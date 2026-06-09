@@ -13,7 +13,6 @@ Usage:
 
 from __future__ import annotations
 
-
 class PortifyBaseException(Exception):
     """Base for all domain exceptions."""
 
@@ -25,36 +24,30 @@ class PortifyBaseException(Exception):
         self.message = message or self.__class__.message
         super().__init__(self.message)
 
-
 class ResourceNotFound(PortifyBaseException):
     status_code = 404
     error_code = "NOT_FOUND"
     message = "Resource not found"
-
 
 class ForbiddenError(PortifyBaseException):
     status_code = 403
     error_code = "FORBIDDEN"
     message = "You do not have permission to access this resource"
 
-
 class PlanLimitExceeded(PortifyBaseException):
     status_code = 403
     error_code = "PLAN_LIMIT_EXCEEDED"
     message = "Your plan limit has been exceeded. Upgrade to continue."
-
 
 class DomainValidationError(PortifyBaseException):
     status_code = 422
     error_code = "VALIDATION_ERROR"
     message = "Validation failed"
 
-
 class ExternalServiceError(PortifyBaseException):
     status_code = 503
     error_code = "EXTERNAL_SERVICE_ERROR"
     message = "An external service is temporarily unavailable"
-
 
 class ConflictError(PortifyBaseException):
     status_code = 409
