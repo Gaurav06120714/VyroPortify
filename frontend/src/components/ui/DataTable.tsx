@@ -22,9 +22,6 @@ interface DataTableProps<T> {
   initialPageSize?: number;
 }
 
-// Lightweight client-side data table. Sort + filter + paginate without
-// pulling in tanstack-table. Replace later if column resize / virtualization
-// becomes a need.
 export function DataTable<T>({
   rows,
   columns,
