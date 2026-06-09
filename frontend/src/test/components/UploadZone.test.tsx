@@ -1,15 +1,8 @@
-/**
- * Tests for the UploadZone component.
- *
- * Strategy: mock Clerk auth and the API layer; test UI state transitions.
- */
-
 import React from "react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-// Mock Clerk before importing the component
 vi.mock("@clerk/nextjs", () => ({
   useAuth: () => ({
     isSignedIn: true,
@@ -18,7 +11,6 @@ vi.mock("@clerk/nextjs", () => ({
   }),
 }));
 
-// Mock the API module
 vi.mock("@/lib/api", () => ({
   uploadResume: vi.fn(),
   ApiError: class ApiError extends Error {
@@ -32,7 +24,6 @@ vi.mock("@/lib/api", () => ({
   },
 }));
 
-// Mock sonner toast
 vi.mock("sonner", () => ({
   toast: {
     success: vi.fn(),
@@ -40,7 +31,6 @@ vi.mock("sonner", () => ({
   },
 }));
 
-// Mock lucide-react icons
 vi.mock("lucide-react", () => ({
   Upload: () => <span data-testid="icon-upload">upload</span>,
   FileText: () => <span data-testid="icon-file">file</span>,
@@ -81,7 +71,7 @@ describe("UploadZone", () => {
   });
 
   it("shows uploading state with file name when upload starts", async () => {
-    // Mock a slow upload
+    
     mockUploadResume.mockImplementation(
       () => new Promise((resolve) => setTimeout(resolve, 1000)),
     );
@@ -173,7 +163,7 @@ describe("UploadZone", () => {
     });
 
     await waitFor(() => {
-      // Use getAllByText since error message also contains "try again" text
+      
       const elements = screen.getAllByText(/try again/i);
       expect(elements.length).toBeGreaterThan(0);
     });
@@ -189,12 +179,10 @@ describe("UploadZone", () => {
       fireEvent.change(input, { target: { files: [createPdfFile()] } });
     });
 
-    // Wait for error state to render — "Try again" button appears
     await waitFor(() => {
       expect(screen.getAllByText(/upload failed/i).length).toBeGreaterThan(0);
     });
 
-    // Click the "Try again" button specifically (not the paragraph text)
     const tryAgainButton = screen.getByRole("button", { name: /try again/i });
     await act(async () => {
       fireEvent.click(tryAgainButton);
