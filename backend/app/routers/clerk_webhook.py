@@ -35,14 +35,12 @@ from app.models.user import User
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
-
 def _primary_email(payload: dict) -> str | None:
     eid = payload.get("primary_email_address_id")
     for e in payload.get("email_addresses", []) or []:
         if e.get("id") == eid or eid is None:
             return e.get("email_address")
     return None
-
 
 def _primary_phone(payload: dict) -> str | None:
     pid = payload.get("primary_phone_number_id")
@@ -51,13 +49,11 @@ def _primary_phone(payload: dict) -> str | None:
             return p.get("phone_number")
     return None
 
-
 def _full_name(payload: dict) -> str | None:
     first = (payload.get("first_name") or "").strip()
     last = (payload.get("last_name") or "").strip()
     name = f"{first} {last}".strip()
     return name or payload.get("username") or None
-
 
 @router.post("/clerk-webhook", status_code=status.HTTP_200_OK)
 async def clerk_webhook(request: Request, db: DB) -> dict:
@@ -104,9 +100,7 @@ async def clerk_webhook(request: Request, db: DB) -> dict:
             db.add(user)
             await db.flush()
             logger.info("clerk_webhook user_created clerk_id=%s", clerk_id)
-            # Mirror the personal-org bootstrap that happens in security.py on
-            # first authenticated call, so users created via the Clerk hosted UI
-            # immediately have a workspace + membership.
+            
             from app.models.organization import Membership, Organization
 
             owner_label = name or email.split("@")[0]
