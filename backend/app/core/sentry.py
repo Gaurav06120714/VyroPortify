@@ -13,7 +13,6 @@ logger = logging.getLogger(__name__)
 
 _initialized = False
 
-
 def init_sentry() -> None:
     global _initialized
     if _initialized:
