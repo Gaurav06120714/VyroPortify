@@ -48,7 +48,7 @@ export default function Navbar() {
       />
 
       <nav className="relative mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
-        {/* Logo */}
+        {}
         <Link href="/" className="flex items-center gap-2.5">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--pf-accent)]">
             <Zap className="h-4 w-4 text-white" />
@@ -61,7 +61,7 @@ export default function Navbar() {
           </span>
         </Link>
 
-        {/* Desktop links */}
+        {}
         <div className="hidden items-center gap-1 md:flex">
           {LINKS.map((l) => (
             <Link
@@ -85,7 +85,7 @@ export default function Navbar() {
           ))}
         </div>
 
-        {/* Desktop right side */}
+        {}
         <div className="hidden items-center gap-3 md:flex">
           <ThemeToggle compact />
 
@@ -123,7 +123,7 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* Mobile right side */}
+        {}
         <div className="flex items-center gap-2 md:hidden">
           <ThemeToggle compact />
           {isSignedIn && <ProfileDropdown />}
@@ -137,7 +137,7 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* Mobile drawer */}
+      {}
       {mobileOpen && (
         <div
           className="relative overflow-hidden border-b md:hidden"
