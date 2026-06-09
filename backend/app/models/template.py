@@ -23,7 +23,6 @@ from app.models.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 if TYPE_CHECKING:
     from app.models.portfolio import Portfolio
 
-
 class Template(TimestampMixin, Base):
     """Portfolio visual template.
 
@@ -39,7 +38,6 @@ class Template(TimestampMixin, Base):
         Index("ix_templates_author", "author_user_id"),
     )
 
-    # Human-readable slug primary key, e.g. "minimal", "modern", "bold"
     id: Mapped[str] = mapped_column(String(100), primary_key=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     preview_url: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -53,7 +51,6 @@ class Template(TimestampMixin, Base):
         comment="Layout, color scheme, font, and section-visibility settings",
     )
 
-    # ── Marketplace (v2.1) ────────────────────────────────────────────────
     author_user_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="SET NULL"),
@@ -79,12 +76,10 @@ class Template(TimestampMixin, Base):
         Integer, nullable=False, server_default="0",
     )
 
-    # Relationships
     portfolios: Mapped[list["Portfolio"]] = relationship(back_populates="template")
 
     def __repr__(self) -> str:
         return f"<Template id={self.id!r} name={self.name!r} status={self.status!r}>"
-
 
 class TemplateReview(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """One review per (template, user). The unique constraint enforces that
