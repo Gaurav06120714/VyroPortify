@@ -200,7 +200,6 @@
 </head>
 <body>
 
-<!-- Sidebar -->
 <aside class="sidebar">
   <div>
     <h1 class="sidebar-name">{{ name }}</h1>
@@ -244,10 +243,8 @@
   </div>
 </aside>
 
-<!-- Main -->
 <main class="main">
 
-  <!-- Hero -->
   <section class="hero fade-in" id="top">
     <p class="hero-eyebrow">Portfolio</p>
     <h2 class="hero-headline">{{ hero_tagline or title }}</h2>
@@ -262,7 +259,6 @@
     </div>
   </section>
 
-  <!-- About -->
   {% if about_paragraph or summary %}
   <section class="section" id="about">
     <div class="section-header">
@@ -276,7 +272,6 @@
   </section>
   {% endif %}
 
-  <!-- Experience -->
   {% if work_experience %}
   <section class="section" id="experience">
     <div class="section-header">
@@ -308,7 +303,6 @@
   </section>
   {% endif %}
 
-  <!-- Projects -->
   {% if projects %}
   <section class="section" id="projects">
     <div class="section-header">
@@ -337,7 +331,6 @@
   </section>
   {% endif %}
 
-  <!-- Skills (full list) -->
   {% if skills %}
   <section class="section" id="skills">
     <div class="section-header">
@@ -357,7 +350,6 @@
   </section>
   {% endif %}
 
-  <!-- Education -->
   {% if education %}
   <section class="section" id="education">
     <div class="section-header">
@@ -382,7 +374,6 @@
   </section>
   {% endif %}
 
-  <!-- Contact -->
   <section class="section" id="contact">
     <div class="section-header">
       <div class="section-num">06</div>
