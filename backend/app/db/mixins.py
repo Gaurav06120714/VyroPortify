@@ -7,7 +7,6 @@ from sqlalchemy import DateTime, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-
 class UUIDPrimaryKeyMixin:
     """Auto-generated UUID primary key."""
 
@@ -16,7 +15,6 @@ class UUIDPrimaryKeyMixin:
         primary_key=True,
         default=uuid.uuid4,
     )
-
 
 class TimestampMixin:
     """created_at / updated_at columns managed by the DB."""
