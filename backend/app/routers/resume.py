@@ -47,12 +47,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/resume", tags=["Resume"])
 
-# ── Constants ──────────────────────────────────────────────────────────────────
-
 _MAX_BYTES = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
-
-
-# ── Build schemas ──────────────────────────────────────────────────────────────
 
 class WorkExperienceInput(BaseModel):
     company: str = ""
@@ -94,21 +89,16 @@ class SuggestSkillsRequest(BaseModel):
 class SuggestSkillsResponse(BaseModel):
     suggestions: list[str]
 
-
 class CoverLetterRequest(BaseModel):
     name: str = ""
     title: str = ""
     company: str = ""
     role: str = ""
-    highlights: str = ""  # key achievements / selling points
-    tone: str = "professional"  # professional | enthusiastic | concise
-
+    highlights: str = ""  
+    tone: str = "professional"  
 
 class CoverLetterResponse(BaseModel):
     cover_letter: str
-
-
-# ── POST /build ────────────────────────────────────────────────────────────────
 
 @router.post(
     "/build",
@@ -116,14 +106,14 @@ class CoverLetterResponse(BaseModel):
     status_code=status.HTTP_201_CREATED,
     summary="Build a resume from form data using Claude AI",
 )
-@limiter.limit("6/hour")          # tightened from 10/hr — DDoS hardening v3.3.1
+@limiter.limit("6/hour")          
 async def build_resume(
     request: Request,
     payload: BuildResumeRequest,
     current_user: CurrentUser,
     db: DB,
 ) -> BuildResumeResponse:
-    # Per-account daily quota stops slow botnets from grinding the model budget.
+    
     from app.services.quota import consume as consume_quota
     await consume_quota(current_user, "ai_build")
 
@@ -131,7 +121,6 @@ async def build_resume(
 
     form_data = payload.model_dump()
 
-    # Run Claude builder (sync — wraps in thread via anyio if needed)
     import anyio
     resume_data = await anyio.to_thread.run_sync(
         lambda: build_resume_with_claude(form_data)
@@ -146,7 +135,7 @@ async def build_resume(
         file_type="json",
         parsed_data=resume_data.model_dump(),
         raw_text=None,
-        status=ResumeStatus.PARSED,  # already parsed — skip Celery task
+        status=ResumeStatus.PARSED,  
     )
     db.add(resume)
     await db.flush()
@@ -158,9 +147,6 @@ async def build_resume(
         filename=filename,
         message="Resume built successfully",
     )
-
-
-# ── POST /suggest-skills ───────────────────────────────────────────────────────
 
 @router.post(
     "/suggest-skills",
@@ -182,7 +168,6 @@ async def suggest_skills(
 
         from app.services.ai_client import call_ai
 
-        # Sanitize all user-supplied strings before embedding in the prompt.
         safe_career_goal = sanitize_for_ai(payload.career_goal, source="career_goal")
         safe_roles = [r[:100] for r in payload.role_titles[:20]]
         safe_stack = [t[:100] for t in payload.tech_stack[:50]]
@@ -201,16 +186,13 @@ async def suggest_skills(
         if raw.startswith("json"):
             raw = raw[4:]
         suggestions = json.loads(raw)
-        # Filter out skills the user already has
+        
         existing_lower = {s.lower() for s in payload.current_skills}
         filtered = [s for s in suggestions if s.lower() not in existing_lower]
         return SuggestSkillsResponse(suggestions=filtered[:12])
     except Exception as exc:
         logger.warning("Skill suggestion failed: %s", exc)
         return SuggestSkillsResponse(suggestions=[])
-
-
-# ── POST /cover-letter ─────────────────────────────────────────────────────────
 
 @router.post(
     "/cover-letter",
@@ -253,7 +235,7 @@ async def generate_cover_letter(
 
     try:
         from app.services.ai_client import call_ai
-        # use_cache=False — identical inputs should still produce fresh phrasing.
+        
         letter = call_ai(prompt=prompt, max_tokens=1024, use_cache=False)
         return CoverLetterResponse(cover_letter=letter)
     except Exception as exc:
@@ -262,9 +244,6 @@ async def generate_cover_letter(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="Cover letter generation failed. Please try again.",
         )
-
-
-# ── Helpers ────────────────────────────────────────────────────────────────────
 
 async def _get_resume_or_404(
     resume_id: uuid.UUID,
@@ -288,7 +267,6 @@ async def _get_resume_or_404(
         db, result.scalar_one_or_none(), user, min_role=min_role,
     )
 
-
 def _to_response(resume: Resume, presigned_url: str | None = None) -> ResumeResponse:
     """Map ORM → response schema, optionally injecting a fresh presigned URL."""
     return ResumeResponse(
@@ -304,9 +282,6 @@ def _to_response(resume: Resume, presigned_url: str | None = None) -> ResumeResp
         updated_at=resume.updated_at,
     )
 
-
-# ── POST /upload ───────────────────────────────────────────────────────────────
-
 @router.post(
     "/upload",
     response_model=ResumeResponse,
@@ -319,7 +294,7 @@ def _to_response(resume: Resume, presigned_url: str | None = None) -> ResumeResp
         413: {"description": "File exceeds the maximum allowed size"},
     },
     dependencies=[
-        # 20 uploads / hour / IP — prevent storage abuse
+        
         Depends(RateLimitCheck("resume:upload", max_per_ip=20, window_seconds=3600)),
     ],
 )
@@ -328,7 +303,7 @@ async def upload_resume(
     current_user: CurrentUser,
     db: DB,
 ) -> ResumeResponse:
-    # ── 1. Validate content-type ───────────────────────────────────────────
+    
     content_type = file.content_type or ""
     try:
         file_ext = validate_content_type(content_type)
@@ -339,8 +314,6 @@ async def upload_resume(
             detail=f"Unsupported file type '{content_type}'. Allowed: {allowed}",
         )
 
-    # ── 2. Read and size-check ─────────────────────────────────────────────
-    # Use await file.read() — Python 3.14 removed async iteration on UploadFile
     file_bytes = await file.read()
     total_bytes = len(file_bytes)
 
@@ -359,15 +332,6 @@ async def upload_resume(
             ),
         )
 
-    # ── 2b. Magic byte validation ──────────────────────────────────────────
-    # The Content-Type header is attacker-controlled and CANNOT be trusted.
-    # We independently verify the file's actual format by checking its magic
-    # bytes (the first few bytes that identify a file format), then confirm
-    # they match the declared content-type.
-    #
-    # PDF magic: b'%PDF' (0x25 0x50 0x44 0x46)
-    # DOCX/ZIP magic: b'PK\x03\x04' (DOCX is a ZIP archive)
-    # DOC magic: b'\xD0\xCF\x11\xE0' (OLE2 Compound File)
     _MAGIC_MAP = {
         "pdf": (b"%PDF",),
         "docx": (b"PK\x03\x04",),
@@ -397,7 +361,6 @@ async def upload_resume(
             )
     original_filename = file.filename or f"resume.{file_ext}"
 
-    # ── 3. Upload to S3/R2 (falls back to local disk if S3 not configured) ──
     s3_key: str
     presigned: str | None = None
 
@@ -421,7 +384,7 @@ async def upload_resume(
                 detail="File storage service unavailable. Please try again.",
             )
     else:
-        # Local fallback — store in /tmp/vyroportify_uploads/ with unique name
+        
         import os
         import uuid as _uuid
         upload_dir = "/tmp/vyroportify_uploads"
@@ -435,24 +398,22 @@ async def upload_resume(
         presigned = None
         logger.info("S3 not configured — saved file locally at %s", local_path)
 
-    # ── 5. Persist to database ────────────────────────────────────────────
     resume = Resume(
         user_id=current_user.id,
         s3_key=s3_key,
         file_url=presigned,
         original_filename=original_filename,
         file_type=file_ext,
-        status=ResumeStatus.UPLOADED,  # will be updated by the AI parse job
+        status=ResumeStatus.UPLOADED,  
     )
     db.add(resume)
-    await db.flush()  # get ID assigned before returning
+    await db.flush()  
 
     logger.info(
         "Resume created id=%s user=%s key=%s size=%d bytes",
         resume.id, current_user.id, s3_key, total_bytes,
     )
 
-    # ── 6. Parse resume synchronously (inline fallback when Celery unavailable) ──
     try:
         import anyio
 
@@ -466,17 +427,14 @@ async def upload_resume(
         logger.info("Resume parsed inline id=%s", resume.id)
     except Exception as exc:
         logger.error("Inline parse failed for resume %s: %s — will retry via Celery", resume.id, exc)
-        # Try Celery as backup
+        
         try:
             from app.workers.tasks.parse_resume import parse_resume_task
             parse_resume_task.delay(str(resume.id))
         except Exception:
-            pass  # truly non-fatal — resume saved, parsing can be retried
+            pass  
 
     return _to_response(resume, presigned)
-
-
-# ── GET / (list) ───────────────────────────────────────────────────────────────
 
 @router.get(
     "/",
@@ -504,19 +462,17 @@ async def list_resumes(
     skip: int = Query(default=0, ge=0, description="Number of records to skip"),
     limit: int = Query(default=20, ge=1, le=100, description="Max records to return"),
 ) -> ResumeListResponse:
-    # Validate TTL before hitting the DB
+    
     try:
         ttl_hours = validate_presigned_ttl(ttl_hours)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
 
-    # Count total for pagination metadata
     total_result = await db.execute(
         select(func.count()).select_from(Resume).where(Resume.user_id == current_user.id)
     )
     total = total_result.scalar_one()
 
-    # Fetch page
     rows_result = await db.execute(
         select(Resume)
         .where(Resume.user_id == current_user.id)
@@ -526,7 +482,6 @@ async def list_resumes(
     )
     resumes = rows_result.scalars().all()
 
-    # Generate fresh presigned URLs concurrently for all resumes that have an s3_key
     import asyncio
 
     async def _with_url(r: Resume) -> ResumeResponse:
@@ -541,9 +496,6 @@ async def list_resumes(
     items = await asyncio.gather(*[_with_url(r) for r in resumes])
 
     return ResumeListResponse(items=list(items), total=total)
-
-
-# ── GET /{id}/url ──────────────────────────────────────────────────────────────
 
 @router.get(
     "/{resume_id}/url",
@@ -599,9 +551,6 @@ async def get_presigned_url(
         key=resume.s3_key,
     )
 
-
-# ── DELETE /{id} ───────────────────────────────────────────────────────────────
-
 @router.delete(
     "/{resume_id}",
     status_code=status.HTTP_204_NO_CONTENT,
@@ -620,11 +569,6 @@ async def delete_resume(
 ) -> None:
     resume = await _get_resume_or_404(resume_id, current_user, db, min_role="editor")
 
-    # ── 1. Delete from S3 first ───────────────────────────────────────────
-    # Strategy: delete S3 object before the DB row. If S3 fails we return 502
-    # and the DB row is preserved, making retries safe. If DB deletion fails
-    # after a successful S3 delete the row becomes an orphan — acceptable for
-    # MVP; production would use a background cleanup job.
     if resume.s3_key:
         try:
             await storage.delete_file(resume.s3_key)
@@ -637,14 +581,9 @@ async def delete_resume(
                 detail="File could not be deleted from storage. Please try again.",
             )
 
-    # ── 2. Delete DB record ───────────────────────────────────────────────
     await db.delete(resume)
-    # Commit happens automatically when get_db() exits the context manager
-
+    
     logger.info("Resume deleted id=%s user=%s key=%s", resume_id, current_user.id, resume.s3_key)
-
-
-# ── GET /{id}/status ───────────────────────────────────────────────────────────
 
 @router.get(
     "/{resume_id}/status",
@@ -668,9 +607,6 @@ async def get_resume_status(
         status=resume.status,
         parsed_data=resume.parsed_data,
     )
-
-
-# ── POST /{id}/export-pdf (v2.3) ──────────────────────────────────────────────
 
 @router.post(
     "/{resume_id}/export-pdf",
@@ -728,7 +664,6 @@ async def export_resume_pdf_endpoint(
     )
     chash = content_hash(payload, template_id)
 
-    # Cache lookup: same payload + template → return the prior export.
     existing = await db.execute(
         select(ResumeExport)
         .where(
@@ -758,8 +693,6 @@ async def export_resume_pdf_endpoint(
     await db.commit()
     await db.refresh(export)
 
-    # Dispatch render off-process. Synchronous .run() is available for
-    # tests that want to skip Celery; production goes through .delay().
     try:
         from app.workers.tasks.export_resume_pdf import export_resume_pdf as task
 
@@ -773,7 +706,6 @@ async def export_resume_pdf_endpoint(
         "cached": False,
     }
 
-
 @router.get(
     "/exports/{export_id}",
     summary="Get a resume export status + presigned download URL when ready",
@@ -785,7 +717,7 @@ async def get_resume_export(
 
     export = await db.get(ResumeExport, export_id)
     if export is None or export.user_id != current_user.id:
-        # Same OWASP DOR policy as elsewhere: 404 on foreign / missing.
+        
         raise HTTPException(status_code=404, detail="Export not found")
 
     if not export.s3_key:
