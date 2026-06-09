@@ -29,8 +29,6 @@ const ITEMS: NavItem[] = [
   { href: "/dashboard/settings/danger", label: "Danger Zone", icon: AlertTriangle, danger: true },
 ];
 
-// Vertical sub-nav for the Settings section. Path-based active state so the
-// component is fully data-driven — no per-page wiring required.
 export function SettingsNav() {
   const pathname = usePathname();
 
