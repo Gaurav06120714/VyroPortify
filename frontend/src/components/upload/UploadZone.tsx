@@ -54,7 +54,6 @@ export default function UploadZone({ onSuccess }: Props) {
         const token = await getToken();
         if (!token) throw new Error("Not authenticated");
 
-        // Fake progress ticks while waiting for response
         const ticker = setInterval(
           () => setProgress((p) => Math.min(p + 15, 85)),
           400,
