@@ -1,9 +1,5 @@
 import { ImageResponse } from "next/og";
 
-// OG image generator — Next.js renders this on-the-fly at /portfolio/p/<slug>/opengraph-image.
-// 1200x630 is the social-card standard (Twitter, LinkedIn, Facebook all accept it).
-// Edge runtime keeps cold-start fast and avoids pulling Node-only deps.
-
 export const runtime = "edge";
 export const alt = "VyroPortify";
 export const size = { width: 1200, height: 630 };
