@@ -13,12 +13,6 @@ DELETE /api/v1/organizations/{id}/members/{user_id}  Remove member (owner only)
 RBAC enforcement lives in app.core.authz.require_role (v2.0.1).
 """
 
-# NOTE: do NOT add `from __future__ import annotations` here.
-# It turns Annotated[..., Depends(...)] into ForwardRef strings, which
-# Pydantic v2.13 can't fully resolve when FastAPI builds the OpenAPI
-# schema for routes that mix DB and CurrentUser deps — observed as a
-# 422 "query.db required" at runtime and a 500 on /openapi.json.
-
 import logging
 import re
 import uuid
@@ -45,17 +39,13 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/organizations", tags=["Organizations"])
 
-
-# ── Helpers ───────────────────────────────────────────────────────────────────
-
 def _slugify(name: str) -> str:
     """Lowercase, hyphenate, strip non-alphanum. Uniqueness is checked at the DB level."""
     s = name.lower().strip()
     s = re.sub(r"[^a-z0-9\s-]", "", s)
     s = re.sub(r"\s+", "-", s)[:80]
-    # Append a short suffix to reduce collision odds without an extra roundtrip.
+    
     return f"{s}-{uuid.uuid4().hex[:6]}"
-
 
 async def _ensure_member(
     organization_id: uuid.UUID, user: User, db: DB
@@ -79,9 +69,6 @@ async def _ensure_member(
         )
     return m
 
-
-# ── GET / (list) ──────────────────────────────────────────────────────────────
-
 @router.get(
     "",
     response_model=list[OrganizationWithRole],
@@ -90,10 +77,7 @@ async def _ensure_member(
 async def list_organizations(
     current_user: CurrentUser, db: DB
 ) -> list[OrganizationWithRole]:
-    # B12/B22: stable ordering. Without this, Postgres returns rows in
-    # heap order — refreshing the audit-log page (which picks orgs[0])
-    # showed a different org's events on each refresh. Personal org
-    # first (always the user's "home"), then team orgs by creation date.
+    
     result = await db.execute(
         select(Membership)
         .join(Organization, Membership.organization_id == Organization.id)
@@ -114,9 +98,6 @@ async def list_organizations(
         for m in rows
     ]
 
-
-# ── POST / (create) ───────────────────────────────────────────────────────────
-
 @router.post(
     "",
     response_model=OrganizationResponse,
@@ -132,16 +113,13 @@ async def create_organization(
         is_personal=False,
     )
     db.add(org)
-    await db.flush()  # need org.id for the Membership row
+    await db.flush()  
 
     db.add(Membership(organization_id=org.id, user_id=current_user.id, role="owner"))
     await db.commit()
     await db.refresh(org)
     logger.info("organization_created id=%s user=%s", org.id, current_user.id)
     return OrganizationResponse.model_validate(org)
-
-
-# ── GET /{id} ─────────────────────────────────────────────────────────────────
 
 @router.get(
     "/{org_id}",
@@ -154,9 +132,6 @@ async def get_organization(
     await _ensure_member(org_id, current_user, db)
     org = await db.get(Organization, org_id)
     return OrganizationResponse.model_validate(org)
-
-
-# ── Members ───────────────────────────────────────────────────────────────────
 
 @router.get(
     "/{org_id}/members",
@@ -172,7 +147,6 @@ async def list_members(
     )
     return [MembershipResponse.model_validate(m) for m in result.scalars().all()]
 
-
 @router.post(
     "/{org_id}/invite",
     response_model=MembershipResponse,
@@ -186,8 +160,7 @@ async def invite_member(
     current_user: CurrentUser,
     db: DB,
 ) -> MembershipResponse:
-    # MVP: invite-by-email-of-existing-user. Full invite-link flow with a
-    # token + Resend email lands in v2.1.
+    
     result = await db.execute(select(User).where(User.email == body.email))
     invitee = result.scalar_one_or_none()
     if invitee is None:
@@ -196,7 +169,6 @@ async def invite_member(
             detail="No user with that email exists yet — ask them to sign up first.",
         )
 
-    # Dedupe: refuse re-invite of an existing member.
     existing = await db.execute(
         select(Membership).where(
             Membership.organization_id == org_id,
@@ -214,8 +186,6 @@ async def invite_member(
     db.add(m)
     await db.flush()
 
-    # User-visible audit trail (v2.0.2). Wrapped via record_audit_safe so a
-    # logging row failure can never block the invite itself.
     from app.services.audit import record_audit_safe
 
     await record_audit_safe(
@@ -235,7 +205,6 @@ async def invite_member(
         org_id, invitee.id, body.role, current_user.id,
     )
     return MembershipResponse.model_validate(m)
-
 
 @router.patch(
     "/{org_id}/members/{user_id}",
@@ -262,7 +231,6 @@ async def update_role(
     await db.refresh(m)
     return MembershipResponse.model_validate(m)
 
-
 @router.get(
     "/{org_id}/audit-log",
     summary="List audit events for the org (admin+)",
@@ -276,7 +244,7 @@ async def list_audit_log(
     offset: int = 0,
     action: str | None = None,
 ) -> dict:
-    # v2.0.2 — paginated, optionally filtered by action prefix.
+    
     from app.models.audit_event import AuditEvent
 
     limit = max(1, min(limit, 200))
@@ -305,7 +273,6 @@ async def list_audit_log(
         "offset": offset,
     }
 
-
 @router.delete(
     "/{org_id}/members/{user_id}",
     status_code=status.HTTP_204_NO_CONTENT,
@@ -323,11 +290,7 @@ async def remove_member(
     m = result.scalar_one_or_none()
     if m is None:
         raise HTTPException(status_code=404, detail="Membership not found")
-    # Prevent removing the last owner — locks the user out of their own org.
-    # B3 fix: collapsed to a single COUNT(*). The original had a dead
-    # `owner_count = db.scalar(... with_only_columns(Membership.id))`
-    # whose result was thrown away, followed by a redundant full
-    # SELECT that pulled every owner row to .len() the list.
+    
     if m.role == "owner":
         from sqlalchemy import func as sql_func
 
@@ -344,11 +307,7 @@ async def remove_member(
     await db.delete(m)
     await db.commit()
 
-
-# ── v3.0.3 — White-label branding (enterprise) ────────────────────────────────
-
-from pydantic import BaseModel as _BrBase  # noqa: E402
-
+from pydantic import BaseModel as _BrBase  
 
 class BrandingResponse(_BrBase):
     logo_url: str | None = None
@@ -358,18 +317,15 @@ class BrandingResponse(_BrBase):
     custom_css: str | None = None
     hide_branding: bool = False
 
-
 class BrandingUpdate(_BrBase):
     logo_url: str | None = None
-    primary_color: str | None = None  # hex #RRGGBB or #RRGGBBAA
+    primary_color: str | None = None  
     accent_color: str | None = None
     font_family: str | None = None
     custom_css: str | None = None
     hide_branding: bool | None = None
 
-
 _FORBIDDEN_CSS = ("<script", "</script", "<iframe", "javascript:", "@import")
-
 
 def _sanitise_css(css: str | None) -> str | None:
     if css is None:
@@ -385,7 +341,6 @@ def _sanitise_css(css: str | None) -> str | None:
         raise HTTPException(status_code=400, detail="custom_css too large (>20kB)")
     return css
 
-
 @router.get(
     "/{org_id}/branding",
     response_model=BrandingResponse,
@@ -395,7 +350,7 @@ async def get_branding(org_id: uuid.UUID, db: DB, current_user: CurrentUser) -> 
     org = await db.get(Organization, org_id)
     if org is None:
         raise HTTPException(status_code=404, detail="Org not found")
-    # Membership check
+    
     is_member = await db.scalar(
         select(Membership.id).where(
             Membership.organization_id == org_id, Membership.user_id == current_user.id
@@ -411,7 +366,6 @@ async def get_branding(org_id: uuid.UUID, db: DB, current_user: CurrentUser) -> 
         custom_css=org.custom_css,
         hide_branding=org.hide_branding,
     )
-
 
 @router.put(
     "/{org_id}/branding",
