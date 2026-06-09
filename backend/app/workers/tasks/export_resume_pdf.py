@@ -17,7 +17,6 @@ from app.workers.celery_app import celery_app
 
 logger = logging.getLogger(__name__)
 
-
 async def _render_and_upload(export_id: str) -> None:
     from app.database import AsyncSessionLocal
     from app.models.resume import Resume
@@ -56,8 +55,6 @@ async def _render_and_upload(export_id: str) -> None:
 
         result = render_resume_pdf(payload, template_id=export.template_id)
 
-        # Upload to S3/R2 — key includes the content hash so multiple
-        # exports of the same content collapse to the same object.
         s3_key = f"resume-exports/{export.user_id}/{export.content_hash}.pdf"
         await storage.upload_bytes(
             s3_key,
@@ -73,7 +70,6 @@ async def _render_and_upload(export_id: str) -> None:
             "export_completed id=%s engine=%s bytes=%d",
             export_id, result.engine, len(result.pdf_bytes),
         )
-
 
 @celery_app.task(
     name="resume.export_pdf",
