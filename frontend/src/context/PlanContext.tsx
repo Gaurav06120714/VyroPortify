@@ -29,7 +29,7 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
       const status = await getBillingStatus(token);
       setPlan(status.plan === "pro" ? "pro" : "free");
     } catch {
-      // silently keep free
+      
     } finally {
       setLoading(false);
     }
