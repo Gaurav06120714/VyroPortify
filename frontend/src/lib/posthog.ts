@@ -16,7 +16,7 @@ export function initPostHog() {
     capture_pageview: true,
     capture_pageleave: true,
     loaded: (ph) => {
-      // Opt out of autocapture in development
+      
       if (process.env.NODE_ENV === "development") {
         ph.opt_out_capturing();
       }
