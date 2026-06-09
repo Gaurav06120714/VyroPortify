@@ -1,15 +1,6 @@
-/**
- * Tests for the useJobStatus hook.
- *
- * Tests: initial state, poll calls API, cleanup on unmount, error handling.
- * Note: the hook uses setTimeout for polling. Tests use real timers with
- * sufficient timeout, or verify structural behavior without waiting for timers.
- */
-
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
 
-// Mock Clerk before the hook is imported
 vi.mock("@clerk/nextjs", () => ({
   useAuth: () => ({
     isSignedIn: true,
@@ -18,7 +9,6 @@ vi.mock("@clerk/nextjs", () => ({
   }),
 }));
 
-// Mock the API module
 const mockGetPortfolioStatus = vi.fn();
 
 vi.mock("@/lib/api", () => ({
@@ -39,8 +29,8 @@ describe("useJobStatus", () => {
   });
 
   it("starts with 'parsing' phase and null error", () => {
-    // Don't let the async poll settle — just check initial sync state
-    mockGetPortfolioStatus.mockReturnValue(new Promise(() => {})); // never resolves
+    
+    mockGetPortfolioStatus.mockReturnValue(new Promise(() => {})); 
 
     const { result, unmount } = renderHook(() => useJobStatus(JOB_ID));
 
@@ -63,7 +53,7 @@ describe("useJobStatus", () => {
     const { unmount } = renderHook(() => useJobStatus(JOB_ID));
 
     await act(async () => {
-      // Flush promises to let the first poll complete
+      
       await new Promise((r) => setTimeout(r, 50));
     });
 
@@ -143,9 +133,8 @@ describe("useJobStatus", () => {
       await new Promise((r) => setTimeout(r, 100));
     });
 
-    // Phase stays in initial "parsing" state — transient errors don't crash the hook
     expect(result.current.phase).toBe("parsing");
-    // error is only set on explicit "failed" backend status, not network errors
+    
     expect(result.current.error).toBeNull();
 
     unmount();
@@ -162,7 +151,6 @@ describe("useJobStatus", () => {
 
     const { unmount } = renderHook(() => useJobStatus(JOB_ID));
 
-    // Let first poll settle
     await act(async () => {
       await new Promise((r) => setTimeout(r, 100));
     });
@@ -171,11 +159,8 @@ describe("useJobStatus", () => {
 
     unmount();
 
-    // Wait past one poll interval — no new calls should be made
     await new Promise((r) => setTimeout(r, 200));
 
-    // Unmounted component should not trigger more polls
-    // (stopped.current = true prevents re-scheduling)
     expect(mockGetPortfolioStatus.mock.calls.length).toBe(countBeforeUnmount);
   }, 10_000);
 });
