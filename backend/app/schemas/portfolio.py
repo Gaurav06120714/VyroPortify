@@ -6,11 +6,9 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
-
 class GeneratePortfolioRequest(BaseModel):
     resume_id: uuid.UUID
     template_id: str = Field(default="aurora", pattern="^(aurora|minimal|cyber)$")
-
 
 class PortfolioResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -28,7 +26,6 @@ class PortfolioResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-
 class PortfolioStatusResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -38,26 +35,18 @@ class PortfolioStatusResponse(BaseModel):
     slug: str
     ai_fallback: bool = False
 
-
 class PortfolioListResponse(BaseModel):
     items: list[PortfolioResponse]
     total: int
-
 
 class GeneratePortfolioResponse(BaseModel):
     portfolio_id: uuid.UUID
     job_queued: bool
     message: str
 
-
-# ── Custom domain (Pro) ────────────────────────────────────────────────────────
-
-
 class CustomDomainRequest(BaseModel):
-    # Stored normalized (lowercase, no scheme). Validation happens server-side
-    # so we accept slightly sloppy input (e.g. "https://Alex.dev/") here.
+    
     domain: str = Field(min_length=3, max_length=253)
-
 
 class CustomDomainResponse(BaseModel):
     portfolio_id: uuid.UUID
