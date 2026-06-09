@@ -12,9 +12,6 @@ import TagInput from "@/components/builder/TagInput";
 import { buildResume, suggestSkills, generatePortfolio, ApiError } from "@/lib/api";
 import type { BuildResumeRequest, WorkExperienceInput, ProjectInput } from "@/types";
 
-// ── form state ─────────────────────────────────────────────────────────────────
-
-
 function emptyWork(): WorkExperienceInput {
   return { company: "", role: "", achievements: "" };
 }
@@ -44,8 +41,6 @@ const INITIAL: FormState = {
   career_goal: "",
 };
 
-// ── shared input style ─────────────────────────────────────────────────────────
-
 const CLS = {
   input:
     "w-full rounded-xl border border-[var(--pf-border-light)] bg-[var(--pf-surface)] px-4 py-3 text-[var(--pf-text)] placeholder-[var(--pf-muted)] outline-none transition-colors focus:border-[var(--pf-accent)] text-base",
@@ -53,9 +48,6 @@ const CLS = {
     "w-full rounded-xl border border-[var(--pf-border-light)] bg-[var(--pf-surface)] px-4 py-3 text-[var(--pf-text)] placeholder-[var(--pf-muted)] outline-none transition-colors focus:border-[var(--pf-accent)] text-base resize-none",
   label: "block text-sm font-medium text-[var(--pf-muted)] mb-1.5",
 };
-
-// ── step index helpers ─────────────────────────────────────────────────────────
-// Q1=1, Q2=2, Q3-Q5=3-5 (work exp), Q6-Q8=6-8 (projects), Q9=9, Q10=10, Q11=11, Q12=12
 
 export default function BuildResumePage() {
   const { getToken } = useAuth();
@@ -74,8 +66,6 @@ export default function BuildResumePage() {
   const removeWork = (idx: number) => setForm(f => ({ ...f, work_experiences: f.work_experiences.filter((_, i) => i !== idx) }));
   const addProject = () => setForm(f => ({ ...f, projects: [...f.projects, emptyProject()] }));
   const removeProject = (idx: number) => setForm(f => ({ ...f, projects: f.projects.filter((_, i) => i !== idx) }));
-
-  // ── patch helpers ────────────────────────────────────────────────────────────
 
   const patch = useCallback(<K extends keyof FormState>(key: K, val: FormState[K]) => {
     setForm((f) => ({ ...f, [key]: val }));
@@ -109,8 +99,6 @@ export default function BuildResumePage() {
     });
   };
 
-  // ── AI skill suggestions ─────────────────────────────────────────────────────
-
   const handleSuggestSkills = async () => {
     setSuggestingSkills(true);
     try {
@@ -132,9 +120,7 @@ export default function BuildResumePage() {
         toast.info("No new suggestions — your list looks great!");
       }
     } catch (err) {
-      // UX-06: suggest-skills is Pro-gated server-side, so a free
-      // user gets 403 PLAN_LIMIT_EXCEEDED. Generic "check your
-      // connection" copy is misleading.
+      
       if (err instanceof ApiError && err.status === 403) {
         toast.error("AI skill suggestions require the Pro plan.", {
           description: "Upgrade in Settings → Billing to unlock.",
@@ -149,8 +135,6 @@ export default function BuildResumePage() {
       setSuggestingSkills(false);
     }
   };
-
-  // ── final submit ─────────────────────────────────────────────────────────────
 
   const handleSubmit = async () => {
     setSubmitting(true);
@@ -175,7 +159,6 @@ export default function BuildResumePage() {
       const resumeResult = await buildResume(payload, token);
       toast.success("Resume built! Choosing your template…");
 
-      // Auto-generate with default template — redirect to generating page
       const genResult = await generatePortfolio(resumeResult.resume_id, "aurora", token);
       router.push(`/dashboard/generating/${genResult.portfolio_id}`);
     } catch (err) {
@@ -185,13 +168,9 @@ export default function BuildResumePage() {
     }
   };
 
-  // ── steps ────────────────────────────────────────────────────────────────────
-
-  
   const stepNodes: React.ReactNode[] = [];
   let currentStep = 1;
 
-  // Q1
   stepNodes.push(
     <StepShell
       key="step-1"
@@ -229,7 +208,6 @@ export default function BuildResumePage() {
     </StepShell>
   );
 
-  // Q2
   stepNodes.push(
     <StepShell
       key="step-2"
@@ -284,7 +262,6 @@ export default function BuildResumePage() {
     </StepShell>
   );
 
-  // Work Exps
   form.work_experiences.forEach((exp, index) => {
     stepNodes.push(
       <WorkExpStep
@@ -304,7 +281,6 @@ export default function BuildResumePage() {
     );
   });
 
-  // Projects
   form.projects.forEach((proj, index) => {
     stepNodes.push(
       <ProjectStep
@@ -325,7 +301,6 @@ export default function BuildResumePage() {
     );
   });
 
-  // Education
   stepNodes.push(
     <StepShell
       key="step-edu"
@@ -376,7 +351,6 @@ export default function BuildResumePage() {
     </StepShell>
   );
 
-  // Skills
   stepNodes.push(
     <StepShell
       key="step-skills"
@@ -420,7 +394,6 @@ export default function BuildResumePage() {
     </StepShell>
   );
 
-  // Social links
   stepNodes.push(
     <StepShell
       key="step-social"
@@ -460,7 +433,6 @@ export default function BuildResumePage() {
     </StepShell>
   );
 
-  // Career goal
   stepNodes.push(
     <StepShell
       key="step-goal"
@@ -526,8 +498,6 @@ export default function BuildResumePage() {
   );
 }
 
-// ── Sub-components ─────────────────────────────────────────────────────────────
-
 interface WorkExpStepProps {
   step: number;
   total: number;
@@ -543,7 +513,6 @@ interface WorkExpStepProps {
   onAddProject?: () => void;
   onRemoveProject?: () => void;
 }
-
 
 function WorkExpStep({
   step,
@@ -649,7 +618,6 @@ interface ProjectStepProps {
   onRemoveProject?: () => void;
 }
 
-
 function ProjectStep({
   step,
   total,
@@ -666,14 +634,6 @@ function ProjectStep({
 }: ProjectStepProps) {
   const EMOJIS = ["✨", "🔧", "🎯"];
 
-  // UX-03: every project step is now skippable. The previous code
-  // marked the first project as mandatory (`optional={index > 0}`),
-  // which meant a user without a single project to share saw a
-  // disabled Continue button with no explanation, no skip option,
-  // and no "Add another" affordance — looked broken, blocked them
-  // at the ~50% mark. Pretty much every other step in this builder
-  // accepts an empty value gracefully; aligning Projects with that
-  // pattern.
   const isSkippable = true;
 
   return (
@@ -741,9 +701,7 @@ function ProjectStep({
           />
         </div>
 
-        {/* UX-03: render the Add Another / Remove buttons that were
-            declared on the props interface but never actually drawn.
-            Matches the WorkExpStep pattern. */}
+        {}
         <div className="flex justify-between">
           {onRemoveProject ? (
             <button
