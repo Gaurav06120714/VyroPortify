@@ -23,7 +23,6 @@ from app.security import CurrentUser
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/analytics", tags=["Analytics"])
 
-
 class OverviewResponse(BaseModel):
     org_id: uuid.UUID
     total_portfolios: int
@@ -33,18 +32,15 @@ class OverviewResponse(BaseModel):
     members: int
     audit_events_last_30d: int
 
-
 class TimePoint(BaseModel):
     day: datetime
     portfolios_created: int
     views: int
 
-
 class TopPortfolio(BaseModel):
     id: uuid.UUID
     slug: str
     views: int
-
 
 @router.get(
     "/orgs/{org_id}/overview",
@@ -90,7 +86,6 @@ async def overview(org_id: uuid.UUID, db: DB, current_user: CurrentUser) -> Over
         audit_events_last_30d=int(audit_30d),
     )
 
-
 @router.get(
     "/orgs/{org_id}/timeseries",
     response_model=list[TimePoint],
@@ -119,7 +114,6 @@ async def timeseries(
         )
     ).all()
     return [TimePoint(day=r.day, portfolios_created=int(r.created), views=int(r.views)) for r in rows]
-
 
 @router.get(
     "/orgs/{org_id}/top",
