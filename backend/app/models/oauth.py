@@ -14,7 +14,6 @@ from app.models.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 if TYPE_CHECKING:
     from app.models.user import User
 
-
 class OAuthApp(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Registered third-party application that requests access on behalf of a user."""
 
@@ -36,7 +35,6 @@ class OAuthApp(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
     def redirect_uri_list(self) -> list[str]:
         return [u for u in (self.redirect_uris or "").split(",") if u]
-
 
 class OAuthAuthorizationCode(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Short-lived authorization code issued at /oauth/authorize."""
@@ -62,7 +60,6 @@ class OAuthAuthorizationCode(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     code_challenge_method: Mapped[str | None] = mapped_column(String(8), nullable=True)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-
 
 class OAuthAccessToken(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Bearer token returned from /oauth/token in exchange for an authorization code."""
