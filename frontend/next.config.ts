@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Allow images from common avatar and CDN sources
+  
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "img.clerk.com" },
@@ -13,7 +13,6 @@ const nextConfig: NextConfig = {
     ],
   },
 
-  // Security headers
   async headers() {
     return [
       {
@@ -31,7 +30,6 @@ const nextConfig: NextConfig = {
     ];
   },
 
-  // Proxy API calls to backend in development
   async rewrites() {
     const backendUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
     return [
@@ -42,19 +40,15 @@ const nextConfig: NextConfig = {
     ];
   },
 
-  // v1.7.3 — Unified builder routes. Old build-resume / preview pages
-  // remain reachable for at least one minor so any stale bookmark still
-  // works; they 302 into the new split-pane builder.
   async redirects() {
     return [
-      // The 12-step form lives on for now; only the entry point alias
-      // changes. (Remove this redirect once the form moves inline in v1.7.4.)
+      
       {
         source: "/dashboard/builder",
         destination: "/dashboard/builder/new",
         permanent: false,
       },
-      // Old "view preview" route → new unified builder, preview tab.
+      
       {
         source: "/dashboard/portfolio/:id/preview",
         destination: "/dashboard/builder/:id?tab=preview",
@@ -63,22 +57,14 @@ const nextConfig: NextConfig = {
     ];
   },
 
-  // Source maps in production:
-  // - Server-side source maps are SAFE (never sent to the browser).
-  // - Browser source maps EXPOSE your source code to anyone opening DevTools.
-  //   Only enable if you use Sentry's hidden-source-map upload (which deletes
-  //   the public .map files after uploading). Default: off.
   productionBrowserSourceMaps: false,
 
-  // Strict mode for catching bugs early
   reactStrictMode: true,
 
-  // Ignore ESLint errors during production builds (CI handles lint separately)
   eslint: {
     ignoreDuringBuilds: true,
   },
 
-  // Ignore TypeScript errors during production builds (CI handles tsc separately)
   typescript: {
     ignoreBuildErrors: true,
   },
