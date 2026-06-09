@@ -5,11 +5,6 @@ import { Search, Star, Tag } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { EmptyState } from "@/components/ui/EmptyState";
 
-// v2.1.0 / v2.1.2 — Marketplace browse page.
-// Public listing endpoint, no auth needed. Search + category filter
-// happen client-side over the page response; the API also supports
-// `q` and `category` server-side for deeper catalogs.
-
 interface TemplateRow {
   id: string;
   name: string;
@@ -112,7 +107,7 @@ export default function MarketplacePage() {
               className="overflow-hidden rounded-2xl border border-[var(--pf-border-light)] bg-[var(--pf-surface)] shadow-[var(--pf-elev-1)] transition-shadow hover:shadow-[var(--pf-elev-2)]"
             >
               {t.preview_url ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
+                
                 <img
                   src={t.preview_url}
                   alt={`${t.name} preview`}
@@ -134,8 +129,7 @@ export default function MarketplacePage() {
                   </p>
                 )}
                 <div className="mt-3 flex items-center gap-3 text-xs text-[var(--pf-muted)]">
-                  {/* B20: backend now serializes rating_average as a JSON
-                      number, so Number(...) is redundant. */}
+                  {}
                   <Rating value={t.rating_average} count={t.rating_count} />
                   <span>·</span>
                   <span>{t.downloads_count.toLocaleString()} uses</span>
