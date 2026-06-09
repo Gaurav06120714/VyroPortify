@@ -17,18 +17,15 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-
 def _enabled() -> bool:
-    # Standard OTel env var; presence implies "user wants telemetry on".
+    
     return bool(os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT"))
-
 
 def _safe_import(modname: str) -> Any | None:
     try:
         return __import__(modname, fromlist=["*"])
     except ImportError:
         return None
-
 
 def init_otel(app: Any) -> None:
     """Bootstrap OTel. Safe to call when the SDK isn't installed."""
@@ -60,7 +57,6 @@ def init_otel(app: Any) -> None:
     )
     api.trace.set_tracer_provider(provider)
 
-    # Auto-instrumentation — each contrib is optional.
     for mod_name, instrument in (
         ("opentelemetry.instrumentation.fastapi", "FastAPIInstrumentor"),
         ("opentelemetry.instrumentation.sqlalchemy", "SQLAlchemyInstrumentor"),
