@@ -114,7 +114,7 @@ export default function TemplatesPage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
-      {/* Header */}
+      {}
       <div className="flex items-end justify-between">
         <div>
           <h1 className="text-2xl font-bold text-[var(--pf-text)]">Templates</h1>
@@ -122,7 +122,7 @@ export default function TemplatesPage() {
             Choose the perfect style for your portfolio — all are responsive and SEO-ready.
           </p>
         </div>
-        {/* Viewport toggle */}
+        {}
         <div className="flex items-center rounded-lg border border-[var(--pf-accent-soft)] bg-[var(--pf-surface)] p-0.5">
           {(["desktop", "mobile"] as ViewMode[]).map((m) => (
             <button
@@ -141,7 +141,7 @@ export default function TemplatesPage() {
         </div>
       </div>
 
-      {/* Grid */}
+      {}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         {TEMPLATES.map((t, i) => (
           <motion.div
@@ -158,7 +158,7 @@ export default function TemplatesPage() {
                 : "border-[var(--pf-accent-soft)] hover:border-[var(--pf-border-hover)]"
             }`}
           >
-            {/* Template preview */}
+            {}
             <div
               className="relative overflow-hidden"
               style={{
@@ -166,7 +166,7 @@ export default function TemplatesPage() {
                 height: viewMode === "mobile" ? "240px" : "180px",
               }}
             >
-              {/* Faux browser chrome */}
+              {}
               <div
                 className="flex h-7 items-center gap-1.5 px-3"
                 style={{ background: t.preview.nav }}
@@ -180,7 +180,7 @@ export default function TemplatesPage() {
                 />
               </div>
 
-              {/* Hero strip */}
+              {}
               <div
                 className="mx-3 mt-2 rounded-lg p-4"
                 style={{ background: t.preview.hero }}
@@ -195,7 +195,7 @@ export default function TemplatesPage() {
                 />
               </div>
 
-              {/* Cards row */}
+              {}
               <div className="mx-3 mt-2 flex gap-2">
                 {[60, 80, 70].map((w, ci) => (
                   <div
@@ -215,7 +215,7 @@ export default function TemplatesPage() {
                 ))}
               </div>
 
-              {/* Hover overlay */}
+              {}
               <motion.div
                 animate={{ opacity: hoveredCard === t.id || selected === t.id ? 1 : 0 }}
                 className="absolute inset-0 flex items-center justify-center bg-black/40"
@@ -228,7 +228,7 @@ export default function TemplatesPage() {
                 </span>
               </motion.div>
 
-              {/* Selected badge */}
+              {}
               {selected === t.id && (
                 <motion.div
                   initial={{ scale: 0 }}
@@ -240,7 +240,7 @@ export default function TemplatesPage() {
               )}
             </div>
 
-            {/* Info */}
+            {}
             <div className="bg-[var(--pf-surface)] p-4 space-y-3">
               <div>
                 <div className="flex items-center gap-2">
@@ -284,7 +284,7 @@ export default function TemplatesPage() {
         ))}
       </div>
 
-      {/* Detail panel when template is selected */}
+      {}
       <AnimatePresence>
         {selected && (() => {
           const t = TEMPLATES.find((x) => x.id === selected)!;
