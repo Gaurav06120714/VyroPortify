@@ -6,11 +6,6 @@ import { ShieldCheck } from "lucide-react";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { EmptyState } from "@/components/ui/EmptyState";
 
-// v2.0.2 — Audit Log surface
-// Calls GET /api/v1/organizations/{org}/audit-log for the user's currently
-// selected org. For the MVP we use their first org (typically the personal
-// one). Org switcher arrives in v2.1.
-
 interface AuditRow {
   id: string;
   action: string;
@@ -66,7 +61,7 @@ export default function AuditLogPage() {
       try {
         const token = await getToken();
         if (!token) return;
-        // Resolve the user's first org.
+        
         const orgsRes = await fetch(`${API_URL}/organizations`, {
           headers: { Authorization: `Bearer ${token}` },
         });
