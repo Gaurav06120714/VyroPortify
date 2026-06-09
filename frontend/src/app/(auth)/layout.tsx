@@ -13,7 +13,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       className="relative flex min-h-dvh flex-col items-center justify-center transition-colors duration-300"
       style={{ background: isLight ? "#f5f5f7" : "var(--pf-bg)" }}
     >
-      {/* Background glows */}
+      {}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div
           className="absolute -top-40 -left-40 w-96 h-96 rounded-full blur-3xl"
@@ -29,7 +29,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         />
       </div>
 
-      {/* Top bar — logo + theme toggle */}
+      {}
       <div className="absolute left-0 right-0 top-0 z-20 flex items-center justify-between px-6 py-4">
         <Link href="/" className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--pf-accent)] shadow-[0_0_16px_var(--pf-border-hover)]">
@@ -45,7 +45,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <ThemeToggle />
       </div>
 
-      {/* Auth content */}
+      {}
       <div className="relative z-10 w-full max-w-md px-4 py-20">{children}</div>
     </div>
   );
