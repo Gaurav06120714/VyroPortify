@@ -13,11 +13,7 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-# Initialise the SDK once at import time — thread-safe singleton
 stripe.api_key = settings.STRIPE_SECRET_KEY
-
-
-# ── Checkout ───────────────────────────────────────────────────────────────────
 
 def create_checkout_session(
     user_id: str,
@@ -46,8 +42,7 @@ def create_checkout_session(
             {
                 "price": settings.STRIPE_PRO_PRICE_ID,
                 "quantity": seats,
-                # Allow quantity adjustments from Stripe's hosted page so
-                # the customer can resize their seat count at checkout.
+                
                 "adjustable_quantity": {
                     "enabled": True,
                     "minimum": 1,
@@ -72,7 +67,7 @@ def create_checkout_session(
     }
 
     if stripe_customer_id:
-        # Re-use existing customer so payment methods are pre-filled
+        
         params["customer"] = stripe_customer_id
     else:
         params["customer_email"] = user_email
@@ -83,9 +78,6 @@ def create_checkout_session(
         session.id, user_id, seats, organization_id,
     )
     return session
-
-
-# ── Customer portal ────────────────────────────────────────────────────────────
 
 def create_customer_portal_session(
     stripe_customer_id: str,
@@ -101,9 +93,6 @@ def create_customer_portal_session(
     logger.info("Created portal session for customer %s", stripe_customer_id)
     return session
 
-
-# ── Webhook verification ───────────────────────────────────────────────────────
-
 def construct_webhook_event(payload: bytes, sig_header: str) -> stripe.Event:
     """
     Verify the Stripe-Signature header and return a typed Event object.
@@ -112,9 +101,6 @@ def construct_webhook_event(payload: bytes, sig_header: str) -> stripe.Event:
     return stripe.Webhook.construct_event(
         payload, sig_header, settings.STRIPE_WEBHOOK_SECRET
     )
-
-
-# ── Customer helpers ───────────────────────────────────────────────────────────
 
 def get_or_create_customer(user_id: str, email: str, name: str | None = None) -> str:
     """
@@ -135,7 +121,6 @@ def get_or_create_customer(user_id: str, email: str, name: str | None = None) ->
     )
     return customer.id
 
-
 def get_subscription_status(stripe_customer_id: str) -> dict[str, Any]:
     """
     Returns the current subscription plan for a customer.
@@ -149,7 +134,7 @@ def get_subscription_status(stripe_customer_id: str) -> dict[str, Any]:
     )
 
     if not subscriptions.data:
-        # Check for trialing subscriptions too
+        
         trialing = stripe.Subscription.list(
             customer=stripe_customer_id,
             status="trialing",
